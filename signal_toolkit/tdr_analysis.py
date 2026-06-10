@@ -61,6 +61,10 @@ class TDR:
 
     @staticmethod
     def reflection_coefficient(z_load, z0=50):
+        if np.isinf(z_load):
+            return 1.0
+        if z_load == 0:
+            return -1.0
         return (z_load - z0) / (z_load + z0)
 
     def cable_model(self, length_m, fault_type='open', z0=50):
@@ -77,7 +81,7 @@ class TDR:
         n_int = int(round(duration * fs_int))
         n_int = max(n_int, 100)
         t_int = np.arange(n_int) / fs_int
-        tr = 1e-9
+        tr = max(2.0 / fs_int, 1e-9)
         sigma = tr / 2.355
         tau = 3 * sigma
         incident = np.exp(-((t_int - tau) ** 2) / (2 * sigma ** 2))
@@ -112,7 +116,7 @@ def equivalent_sampling(real_waveform, m, trigger_period):
 
 
 def detect_reflection(waveform, threshold=0.02):
-    envelope = np.abs(waveform)
+    envelope = np.abs(np.asarray(waveform, dtype=float))
     envelope -= envelope.min()
     envelope /= envelope.max() + 1e-12
     peaks = []
