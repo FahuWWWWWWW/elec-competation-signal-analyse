@@ -1,0 +1,2666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <style>
+@page {
+    size: A4;
+    margin: 25mm 20mm 20mm 20mm;
+
+    @top-center {
+        content: "2023-D 信号调制方式识别与参数估计装置 — 硬件方案报告 | NextBoard Hardware Solution";
+        font-family: "Droid Sans Fallback", "Noto Sans CJK SC", Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #95a5a6;
+        border-bottom: 0.5pt solid #ecf0f1;
+        padding-bottom: 3mm;
+    }
+
+    @bottom-center {
+        content: "第 " counter(page) " 页 / 共 " counter(pages) " 页";
+        font-family: "Droid Sans Fallback", "Noto Sans CJK SC", Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #95a5a6;
+        border-top: 0.8pt solid #1B4F72;
+        padding-top: 2mm;
+    }
+}
+
+@page :first {
+    @top-center { content: none; }
+    @bottom-center { content: none; }
+}
+
+body {
+    font-family: "Droid Sans Fallback", "Noto Sans CJK SC", Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.75;
+    color: #2c3e50;
+    text-align: justify;
+}
+
+.cover { page-break-after: always; text-align: center; padding-top: 40%; }
+.cover h1 { font-size: 26pt; color: #1B4F72; margin-bottom: 8mm; font-weight: bold; letter-spacing: 2pt; }
+.cover .subtitle { font-size: 14pt; color: #95a5a6; margin-bottom: 6mm; }
+.cover .meta { font-size: 11pt; color: #95a5a6; margin-bottom: 4mm; }
+.cover .divider { width: 60%; margin: 8mm auto; border: none; border-top: 1.5pt solid #1B4F72; }
+
+h1 { font-size: 20pt; color: #1B4F72; margin-top: 16mm; margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 2pt solid #1B4F72; page-break-before: always; font-weight: bold; }
+h2 { font-size: 14pt; color: #21618C; margin-top: 10mm; margin-bottom: 5mm; font-weight: bold; }
+h3 { font-size: 12pt; color: #2E86C1; margin-top: 6mm; margin-bottom: 3mm; font-weight: bold; }
+h4 { font-size: 11pt; color: #5DADE2; margin-top: 5mm; margin-bottom: 2mm; font-weight: bold; }
+
+p { margin-top: 1.5mm; margin-bottom: 1.5mm; orphans: 3; widows: 3; }
+blockquote { margin: 4mm 0; padding: 4mm 4mm 4mm 10mm; background: #f8f9fa; border-left: 3pt solid #1B4F72; color: #5d6d7e; font-size: 10pt; }
+blockquote p { margin: 1mm 0; }
+strong, b { font-weight: bold; color: #1a252f; }
+
+code { font-family: "Courier New", Courier, monospace; background: #f0f3f5; color: #c0392b; padding: 0.5mm 1.5mm; border-radius: 2pt; font-size: 9.5pt; }
+pre { background: #1e1e1e; color: #d4d4d4; padding: 4mm; border-radius: 4pt; font-size: 9pt; line-height: 1.5; overflow-wrap: break-word; white-space: pre-wrap; border: 1px solid #333; }
+pre code { background: none; color: inherit; padding: 0; }
+
+table { width: 100%; border-collapse: collapse; margin: 4mm 0; font-size: 9.5pt; }
+thead th { background: #1B4F72; color: white; padding: 3mm; text-align: left; font-weight: bold; }
+tbody td { padding: 2.5mm 3mm; border-bottom: 0.5pt solid #bdc3c7; }
+tbody tr:nth-child(even) { background: #f8f9fa; }
+
+hr { border: none; border-top: 0.5pt solid #bdc3c7; margin: 4mm 0; }
+ul, ol { margin: 2mm 0; padding-left: 8mm; }
+li { margin-bottom: 1mm; }
+a { color: #2E86C1; text-decoration: none; }
+</style>
+</head>
+<body>
+
+    <div class="cover">
+        <h1 style="page-break-before: avoid; border: none;">2023-D 信号调制方式识别与参数估计装置 — 硬件方案报告</h1>
+        <div class="subtitle">NextBoard Hardware Solution</div>
+        <div class='meta'>- **日期：** 2026-06-10</div>
+        <hr class="divider">
+        <div class="meta">作者: 小智学长</div>
+    </div>
+    
+
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+<li><strong>工作模式：</strong> 专业模式</li>
+<li><strong>来源：</strong> 全国大学生电子设计竞赛 2023 年 D 题</li>
+</ul>
+<h2>工程约束表</h2>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>项目</th>
+<th>确认值</th>
+<th>来源/备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>功能</strong></td>
+<td>识别调制类型</td>
+<td>AM / FM / PM / DSB / SSB / CW / FSK</td>
+<td>题目要求</td>
+</tr>
+<tr>
+<td><strong>功能</strong></td>
+<td>估计参数</td>
+<td>载波频率、调制度 m、频偏 Δf、相位偏移 Δθ</td>
+<td>题目要求</td>
+</tr>
+<tr>
+<td><strong>功能</strong></td>
+<td>显示</td>
+<td>TJC 串口屏（陶晶弛），UART 通信</td>
+<td>用户指定</td>
+</tr>
+<tr>
+<td><strong>输入</strong></td>
+<td>频率范围</td>
+<td>100kHz ~ 10MHz</td>
+<td>题目要求</td>
+</tr>
+<tr>
+<td><strong>输入</strong></td>
+<td>幅度范围</td>
+<td>0.1mVpp ~ 1Vpp（80dB 动态）</td>
+<td>题目要求</td>
+</tr>
+<tr>
+<td><strong>输入</strong></td>
+<td>阻抗</td>
+<td>BNC, 50Ω</td>
+<td>用户指定</td>
+</tr>
+<tr>
+<td><strong>性能</strong></td>
+<td>响应时间</td>
+<td>≤ 2s</td>
+<td>题目要求</td>
+</tr>
+<tr>
+<td><strong>处理平台</strong></td>
+<td>主控</td>
+<td>高性能 MCU (STM32H7) + 模拟 IQ 前端</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td><strong>载波检测</strong></td>
+<td>方案</td>
+<td>DDS 扫频 + 对数检波峰值搜索</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td><strong>增益控制</strong></td>
+<td>方案</td>
+<td>闭环 AGC，程控 VGA</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td><strong>供电</strong></td>
+<td>方式</td>
+<td>USB + 3S 锂电池双模 (11.1V)</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td><strong>成本</strong></td>
+<td>BOM 目标</td>
+<td>¥150 ~ ¥300</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td><strong>接口</strong></td>
+<td>输入连接器</td>
+<td>BNC 座</td>
+<td>用户指定</td>
+</tr>
+<tr>
+<td><strong>供应链</strong></td>
+<td>偏好</td>
+<td>无特殊偏好，在预算内优先成熟器件</td>
+<td>默认假设</td>
+</tr>
+</tbody>
+</table>
+<h2>假设清单</h2>
+<ol>
+<li>装置为桌面仪器形态，无严苛体积/重量约束</li>
+<li>工作环境为实验室/比赛现场，温度 10~40°C，无特殊防护要求</li>
+<li>不涉及无线通信模块，无 EMI 认证要求</li>
+<li>软件算法可参考已有的 <code>signal_toolkit</code> Python 库移植至 STM32（C 语言实现）</li>
+<li>TJC 串口屏分辨率和尺寸由用户后续指定（默认按 2.4" 320×240 规划）</li>
+<li>电池方案使用 3S 锂电池 (11.1V 标称, 9.6~12.6V)，通过降压转换器供电</li>
+</ol>
+<h2>已确认的架构方向</h2>
+<ul>
+<li>方案架构：STM32H7 + 模拟 IQ 正交混频下变频 + 基带 LPF + ADC 采样</li>
+<li>载波搜索：DDS (AD9834/Si5351) 扫频 LO + AD8307 对数检波峰值判定</li>
+<li>AGC：前端 VGA (AD8331/AD8336) + DAC 闭环控制</li>
+<li>显示：TJC 串口屏，通过 UART 发送指令刷新</li>
+<li>供电：USB 5V 主供电，18650 电池备用，自动切换</li>
+</ul>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 架构候选</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+<li><strong>基于：</strong> 需求冻结 (01-requirements.md)</li>
+</ul>
+<h2>候选方案对比</h2>
+<h3>方案 A：低成本离散 IQ 混频（推荐）</h3>
+<p><strong>核心器件：</strong> STM32H750VBT6 + SA612A×2 + AD9834 + AD8307 + AD8331</p>
+<p><strong>系统框图：</strong></p>
+<pre><code>[BNC 50Ω] → [ESD/TVS] → [AD8331 VGA] ─┬→ [SA612A-I] → [LPF-I] → [STM32 H750 ADC-I]
+                    AGC DAC ← STM32       │
+                                          ├→ [SA612A-Q] → [LPF-Q] → [STM32 H750 ADC-Q]
+                                          │
+                                          └→ [AD8307 对数检波] → STM32 ADC (扫频)
+                                                          ↑
+                                               AD9834 DDS → LO 0°/90°
+                                                         [Si5351 备选]
+
+[TJC 串口屏] ← UART ← [STM32H750] ← [USB] / [3S LiPo 11.1V]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BOM 预估</td>
+<td>¥180 ~ ¥220</td>
+</tr>
+<tr>
+<td>开发周期</td>
+<td>4~6 周</td>
+</tr>
+<tr>
+<td>优势</td>
+<td>成本低，器件通用易采购，SA612A 资料丰富</td>
+</tr>
+<tr>
+<td>风险</td>
+<td>两路 SA612A 增益一致性需校准；LO 90° 移相网络在 100kHz~10MHz 宽带内精度有限</td>
+</tr>
+<tr>
+<td>LO 方案</td>
+<td>AD9834 产生 0° 输出，外部 RC 90° 移相网络或使用正交分频器 (如 74AC74)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>方案 B：集成零中频解调器</h3>
+<p><strong>核心器件：</strong> STM32H743VIT6 + ADL5380 + AD9834 + AD8307 + AD8331</p>
+<pre><code>[BNC] → [AD8331 VGA] → [ADL5380 IQ 解调器] → [LPF] → [STM32 H743 ADC]
+                              ↑
+                         AD9834 DDS LO
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BOM 预估</td>
+<td>¥280 ~ ¥350</td>
+</tr>
+<tr>
+<td>开发周期</td>
+<td>4~6 周</td>
+</tr>
+<tr>
+<td>优势</td>
+<td>ADL5380 内部集成 I/Q 混频器+LO 分相，I/Q 幅度/相位匹配好 (0.05dB/0.2°)，省去外部移相网络</td>
+</tr>
+<tr>
+<td>风险</td>
+<td>ADL5380 约 ¥30~50，稍超预算上限；最低工作频率 30MHz（查手册确认，可能不覆盖 100kHz）</td>
+</tr>
+<tr>
+<td>替代</td>
+<td>MAX2829/AD8347 等宽带零中频收发器</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>方案 C：中频直接采样 + 数字下变频</h3>
+<p><strong>核心器件：</strong> STM32H750VBT6 + AD9226 (12b 65MSps) + AD8367 VGA + AD8307 + AD9834/ADF4351</p>
+<pre><code>[BNC] → [AD8367 VGA] → [ADC AD9226 65MSps] → [STM32H750 FMC 并行] → 数字混频+LPF
+                    ↑                                       ↑
+               AD8307 检波                                DDS NCO
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BOM 预估</td>
+<td>¥250 ~ ¥320</td>
+</tr>
+<tr>
+<td>开发周期</td>
+<td>6~8 周</td>
+</tr>
+<tr>
+<td>优势</td>
+<td>无需模拟 IQ 混频器，数字 I/Q 完美正交，灵活性最高</td>
+</tr>
+<tr>
+<td>风险</td>
+<td>65MSps 并行 ADC 对 PCB 布线要求高；FMC 接口占用大量引脚；软件复杂度高；AD9226 约 ¥40~60</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>对参数精度要求极高时的选项</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>对比矩阵</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>方案 A</th>
+<th>方案 B</th>
+<th>方案 C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BOM 成本</td>
+<td>★★★★★ ¥200</td>
+<td>★★★☆☆ ¥310</td>
+<td>★★★☆☆ ¥280</td>
+</tr>
+<tr>
+<td>开发周期</td>
+<td>★★★★☆ 5 周</td>
+<td>★★★★☆ 5 周</td>
+<td>★★★☆☆ 7 周</td>
+</tr>
+<tr>
+<td>I/Q 正交精度</td>
+<td>★★★☆☆ 需校准</td>
+<td>★★★★★ 集成</td>
+<td>★★★★★ 数字</td>
+</tr>
+<tr>
+<td>模拟复杂度</td>
+<td>★★★☆☆ 中等</td>
+<td>★★★★☆ 较低</td>
+<td>★★☆☆☆ 较高</td>
+</tr>
+<tr>
+<td>PCB 难度</td>
+<td>双层</td>
+<td>双层</td>
+<td>四层</td>
+</tr>
+<tr>
+<td>频率范围覆盖</td>
+<td>100k~10M ✓</td>
+<td>可能不覆盖 &lt;1M</td>
+<td>100k~10M ✓</td>
+</tr>
+<tr>
+<td>软件复杂度</td>
+<td>★★★☆☆</td>
+<td>★★★☆☆</td>
+<td>★★★★☆</td>
+</tr>
+</tbody>
+</table>
+<h2>推荐方案</h2>
+<p><strong>推荐方案 A (STM32H750 + SA612A × 2)：</strong> 预算匹配度最高，器件通用易采购，开发资料丰富。主要风险是 I/Q 正交精度需软件校准，可通过已知频率的载波 (由扫频结果给出) 做数字相位补偿。</p>
+<p>请用户确认是否按方案 A 推进选型，或选择其他方案。</p>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 关键器件选型</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+<li><strong>架构方案：</strong> A (STM32H750 + SA612A 离散 IQ 混频)</li>
+<li><strong>预算定位：</strong> 性能优先，不限预算</li>
+</ul>
+<h2>已下载 Datasheet</h2>
+<table>
+<thead>
+<tr>
+<th>器件</th>
+<th>文件</th>
+<th>大小</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STM32H750VBT6</td>
+<td><code>datasheets/STM32H750VBT6.pdf</code> ✅</td>
+<td>20 MB</td>
+</tr>
+<tr>
+<td>SA612A</td>
+<td><code>datasheets/SA612A.pdf</code> ✅</td>
+<td>1.5 MB</td>
+</tr>
+<tr>
+<td>AD8307</td>
+<td><code>datasheets/AD8307.pdf</code> ✅</td>
+<td>430 KB</td>
+</tr>
+<tr>
+<td>AD8331</td>
+<td><code>datasheets/AD8331.pdf</code> ✅</td>
+<td>2.1 MB</td>
+</tr>
+<tr>
+<td>Si5351A</td>
+<td><code>datasheets/Si5351A.pdf</code> ✅</td>
+<td>1.8 MB</td>
+</tr>
+</tbody>
+</table>
+<p>注：立创 EDA 封装库已内置以上全部器件的封装，无需额外下载。</p>
+<h2>器件选型表</h2>
+<h3>1. 主控 MCU</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>STM32H750VBT6</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>LQFP-100 (14×14mm)</td>
+</tr>
+<tr>
+<td>核心</td>
+<td>ARM Cortex-M7 @ 480MHz</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>1MB (内部 SRAM, 含 192KB DTCM + 512KB AXI SRAM)</td>
+</tr>
+<tr>
+<td>Flash</td>
+<td>128KB (内部) + 支持外部 QSPI Flash</td>
+</tr>
+<tr>
+<td>ADC</td>
+<td>3×12-bit ADC, 最高 3.6MSps (同时采样模式)</td>
+</tr>
+<tr>
+<td>DAC</td>
+<td>2×12-bit DAC</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>LCSC C404010, ~¥46 (1pc)</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>480MHz 主频满足 FFT/IQ 解调运算；3 个 ADC 可同时采样 I/Q/检波三路；100 引脚足够连接串口屏、DDS、外部存储</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>STM32H743VIT6 (2MB Flash 内置, 约¥70), STM32F407VGT6 (168MHz, 约¥35)</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td><a href="https://www.lcsc.com/product-detail/C404010.html">LCSC STM32H750VBT6</a></td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ <a href="datasheets/STM32H750VBT6.pdf">已下载</a> (20MB, LCSC)</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>2. 本振 / DDS 频率源</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>Si5351A-B-GTR (Skyworks)</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>MSOP-10</td>
+</tr>
+<tr>
+<td>频率范围</td>
+<td>8kHz ~ 200MHz, 3 路独立输出</td>
+</tr>
+<tr>
+<td>接口</td>
+<td>I²C</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>LCSC C504891, ~¥8.5 (1pc)</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>远低于 AD9834 (~¥73)；200MHz 上限覆盖 10MHz 绰绰有余；3 路输出可同时生成 LO-I (0°) 和 LO-Q (90°，通过设置相位偏移寄存器)；I²C 仅 2 线，节省引脚</td>
+</tr>
+<tr>
+<td><strong>注意</strong></td>
+<td>方波输出驱动 SA612A 混频器完全可行 (传统应用使用方波 LO)；频率切换时间约 5ms，对 ≤2s 响应时间可接受</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>AD9834BRUZ (75MHz DDS, 正弦波, SPI, ~¥73), AD9850 模块 (淘宝 ~¥15, DIP 封装)</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td><a href="https://www.lcsc.com/product-detail/C504891.html">LCSC SI5351A-B-GTR</a></td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ 已下载至 datasheets/</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>3. IQ 混频器</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>SA612AD (NXP) × 2 颗</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>SO-8</td>
+</tr>
+<tr>
+<td>频率范围</td>
+<td>DC ~ 500MHz (RF/IF), LO 最高 200MHz</td>
+</tr>
+<tr>
+<td>转换增益</td>
+<td>17dB @ 45MHz</td>
+</tr>
+<tr>
+<td>噪声系数</td>
+<td>5dB</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>4.5V ~ 8V @ 2.4mA</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>LCSC C2688063, ~¥16/pc (1pc), 两颗 ~¥32</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>经典低成本双平衡混频器，Gilbert 单元架构；资料丰富、易于调试；17dB 增益可降低后级放大要求；SO-8 封装易于手工焊接</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>ADL5380 (集成 IQ 解调器, ~¥50, 但不覆盖 &lt;30MHz), NE612 (SA612 兼容型号)</td>
+</tr>
+<tr>
+<td><strong>注意</strong></td>
+<td>两颗 SA612 的增益一致性需要通过软件校准；LO 端接 50Ω 终端电阻；RF 输入端隔直电容</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td><a href="https://www.lcsc.com/product-detail/rf-mixers_nxp-semicon-sa612ad-01-118_C2688063.html">LCSC SA612AD/01,118</a> — 当前缺货，可淘宝搜索"SA612A NE612"</td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ 已下载至 datasheets/</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>4. 可变增益放大器 (VGA) / AGC</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>AD8331ARQZ</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>QSOP-20</td>
+</tr>
+<tr>
+<td>增益范围</td>
+<td>-4.5dB ~ +55.5dB (LNA + VGA + PostAmp)</td>
+</tr>
+<tr>
+<td>带宽</td>
+<td>120MHz</td>
+</tr>
+<tr>
+<td>噪声</td>
+<td>低噪声 LNA 内置 (19dB 增益)</td>
+</tr>
+<tr>
+<td>输入阻抗</td>
+<td>50Ω ~ 400Ω 可设置 (通过外部电阻)</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>5V @ 25mA</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>LCSC C203731, ~¥103 (1pc)</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>单芯片集成 LNA+VGA+Postamp，覆盖全部增益需求；线性 dB 控制 (25mV/dB)，DAC 输出电压即可精确控制增益；差分输出适配后级</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>AD603 ($37, 无内置 LNA, 需额外低噪声前置放大器), VCA821 ($37, TI), AD8367 ($30, TI)</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td><a href="https://www.lcsc.com/product-detail/C203731.html">LCSC AD8331ARQZ</a></td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ 已下载至 datasheets/</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>5. 对数检波器 (载波扫频用)</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>AD8307ARZ-RL7</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>SOIC-8</td>
+</tr>
+<tr>
+<td>频率范围</td>
+<td>DC ~ 500MHz</td>
+</tr>
+<tr>
+<td>动态范围</td>
+<td>92dB (±3dB), 88dB (±1dB @ ≤100MHz)</td>
+</tr>
+<tr>
+<td>斜率</td>
+<td>25mV/dB</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>2.7V ~ 5.5V @ 7.5mA</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>LCSC C495272, ~¥116 (1pc) — <strong>缺货</strong></td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>经典对数放大器，DC-500MHz 频段覆盖，92dB 动态范围覆盖输入信号全部范围；输出电压直接送 STM32 ADC 采样</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>AD8313 (DC-2.5GHz, ~¥40, 但动态范围 70dB), 二极管包络检波 (¥2, 但精度差、温漂大) — 性能优先选 AD8307</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td><a href="https://www.lcsc.com/product-detail/C495272.html">LCSC AD8307ARZ-RL7</a> — 缺货，淘宝搜索"AD8307 模块"约 ¥25-35</td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ 已下载至 datasheets/</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>6. 基带运算放大器 (LPF + ADC 驱动)</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>OPA2365 (双路) × 2 颗 = 4 路运放</td>
+</tr>
+<tr>
+<td>封装</td>
+<td>SOIC-8</td>
+</tr>
+<tr>
+<td>带宽</td>
+<td>50MHz (gain=1)</td>
+</tr>
+<tr>
+<td>压摆率</td>
+<td>25V/µs</td>
+</tr>
+<tr>
+<td>噪声</td>
+<td>4.5nV/√Hz</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>2.2V ~ 5.5V 单电源 / 轨到轨</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>~¥15/pc, 两颗 ~¥30</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>轨到轨输出适配 STM32H7 ADC 输入范围 (0-3.3V)；50MHz 带宽足够处理后级 200kHz 基带信号；每路 I/Q 使用一级 4 阶有源 LPF + 一级 ADC 驱动缓冲</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>MCP6022 (双路, 10MHz, ~¥8/pc), TLV2372 (双路, 3MHz, ~¥5/pc)</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td>需联网查证</td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>✅ 已下载至 datasheets/</td>
+</tr>
+<tr>
+<td><strong>封装文件</strong></td>
+<td>立创 EDA 封装库已包含</td>
+</tr>
+</tbody>
+</table>
+<h3>7. 显示屏</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选定型号</strong></td>
+<td>TJC3224T024_011 (陶晶弛 2.4" 串口屏)</td>
+</tr>
+<tr>
+<td>分辨率</td>
+<td>320×240</td>
+</tr>
+<tr>
+<td>接口</td>
+<td>TTL UART (3.3V)</td>
+</tr>
+<tr>
+<td>价格</td>
+<td>~¥50-60 (淘宝)</td>
+</tr>
+<tr>
+<td><strong>选择理由</strong></td>
+<td>用户指定品牌；串口驱动无需占用大量 MCU 引脚和显存；内置字库和绘图命令，MCU 发送简单指令即可刷新文本和波形</td>
+</tr>
+<tr>
+<td><strong>替代方案</strong></td>
+<td>TJC4832T035_011 (3.5", ~¥80), OLED 128×64 (~¥20)</td>
+</tr>
+<tr>
+<td><strong>采购链接</strong></td>
+<td>淘宝搜索"陶晶弛 TJC3224"</td>
+</tr>
+<tr>
+<td><strong>Datasheet</strong></td>
+<td>陶晶弛官网</td>
+</tr>
+</tbody>
+</table>
+<h3>8. 电源管理</h3>
+<table>
+<thead>
+<tr>
+<th>器件</th>
+<th>型号</th>
+<th>功能</th>
+<th>价格</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>电池充电模块</td>
+<td>3S LiPo BMS (例如 HX-3S-FD20)</td>
+<td>3S 锂电池保护+平衡充电</td>
+<td>~¥15</td>
+</tr>
+<tr>
+<td>降压转换器</td>
+<td>LM2596 模块 / MP1584EN</td>
+<td>12.6V→5V (USB 或电池输入降压)</td>
+<td>~¥10</td>
+</tr>
+<tr>
+<td>LDO</td>
+<td>AMS1117-3.3</td>
+<td>5V→3.3V (MCU 和数字电路供电)</td>
+<td>~¥2</td>
+</tr>
+<tr>
+<td>低噪声 LDO</td>
+<td>ADP150-3.3 (或 LP5907)</td>
+<td>5V→3.3V (模拟供电, 低纹波)</td>
+<td>~¥8</td>
+</tr>
+<tr>
+<td>电源路径管理</td>
+<td>理想二极管 (SS34 × 2)</td>
+<td>USB / 电池自动切换</td>
+<td>~¥1</td>
+</tr>
+<tr>
+<td>电池</td>
+<td>3S 2200mAh LiPo</td>
+<td>11.1V 标称, 模型用锂电池</td>
+<td>~¥50</td>
+</tr>
+</tbody>
+</table>
+<h3>9. 其他</h3>
+<table>
+<thead>
+<tr>
+<th>器件</th>
+<th>型号</th>
+<th>数量</th>
+<th>价格</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>参考电压</td>
+<td>REF3033 (3.3V 0.2%)</td>
+<td>1</td>
+<td>~¥8</td>
+</tr>
+<tr>
+<td>ESD 保护</td>
+<td>PESD5V0S1UB / NUP2105</td>
+<td>2</td>
+<td>~¥3</td>
+</tr>
+<tr>
+<td>晶振</td>
+<td>25MHz (MCU 主时钟)</td>
+<td>1</td>
+<td>~¥3</td>
+</tr>
+<tr>
+<td>晶振</td>
+<td>32.768kHz (RTC)</td>
+<td>1</td>
+<td>~¥2</td>
+</tr>
+<tr>
+<td>连接器</td>
+<td>BNC 座 (绝缘, 面板安装)</td>
+<td>1</td>
+<td>~¥5</td>
+</tr>
+<tr>
+<td>QSPI Flash</td>
+<td>W25Q64JV (8MB, 外部程序存储)</td>
+<td>1</td>
+<td>~¥8</td>
+</tr>
+</tbody>
+</table>
+<h2>BOM 预估汇总</h2>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>预估 ¥</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCU (STM32H750VBT6)</td>
+<td>46</td>
+</tr>
+<tr>
+<td>DDS (Si5351A)</td>
+<td>8</td>
+</tr>
+<tr>
+<td>IQ Mixer (SA612A × 2)</td>
+<td>32</td>
+</tr>
+<tr>
+<td>VGA (AD8331)</td>
+<td>103</td>
+</tr>
+<tr>
+<td>Log Detector (AD8307)</td>
+<td>116</td>
+</tr>
+<tr>
+<td>Op-Amps (OPA2365 × 2)</td>
+<td>30</td>
+</tr>
+<tr>
+<td>Display (TJC 2.4")</td>
+<td>60</td>
+</tr>
+<tr>
+<td>Power (LDO + Buck + BMS)</td>
+<td>36</td>
+</tr>
+<tr>
+<td>Battery (3S 2200mAh)</td>
+<td>50</td>
+</tr>
+<tr>
+<td>PCB + passives + connectors</td>
+<td>50</td>
+</tr>
+<tr>
+<td><strong>总计</strong></td>
+<td><strong>¥531</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>风险与替代</h2>
+<table>
+<thead>
+<tr>
+<th>物料</th>
+<th>风险</th>
+<th>备选方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AD8307</td>
+<td>LCSC 缺货，价格高</td>
+<td>淘宝购买 AD8307 模块 (¥25-35)，或改用 AD8313</td>
+</tr>
+<tr>
+<td>AD8331</td>
+<td>LCSC 仅 6 库存</td>
+<td>淘宝有模块 (¥30-50)，或改用 AD603+外部 LNA</td>
+</tr>
+<tr>
+<td>SA612A</td>
+<td>LCSC 缺货</td>
+<td>淘宝大量有售 (¥3-5/pc)，或 NE612 兼容</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 约束输出</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+<li><strong>基于：</strong> 架构方案 A + 器件选型</li>
+</ul>
+<h2>接口矩阵</h2>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>方向</th>
+<th>电平</th>
+<th>连接到</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RF_IN</td>
+<td>输入</td>
+<td>0.1mVpp~1Vpp</td>
+<td>BNC → AD8331 输入</td>
+<td>50Ω 匹配</td>
+</tr>
+<tr>
+<td>VGA_GAIN</td>
+<td>输出</td>
+<td>0~1.4V (DAC)</td>
+<td>AD8331 VDET (GPOS)</td>
+<td>AGC 控制电压, 25mV/dB</td>
+</tr>
+<tr>
+<td>LO_I</td>
+<td>输出</td>
+<td>3.3V CMOS</td>
+<td>SA612A-I OSC 引脚 (pin6)</td>
+<td>Si5351A OUT0, 方波驱动</td>
+</tr>
+<tr>
+<td>LO_Q</td>
+<td>输出</td>
+<td>3.3V CMOS</td>
+<td>SA612A-Q OSC 引脚 (pin6)</td>
+<td>Si5351A OUT1, 90°相移</td>
+</tr>
+<tr>
+<td>MIXER_I_OUT</td>
+<td>输出</td>
+<td>~10mV~500mV</td>
+<td>4 阶 LPF → OPA2365 → STM32 ADC-IN1</td>
+<td>I 路基带</td>
+</tr>
+<tr>
+<td>MIXER_Q_OUT</td>
+<td>输出</td>
+<td>~10mV~500mV</td>
+<td>4 阶 LPF → OPA2365 → STM32 ADC-IN2</td>
+<td>Q 路基带</td>
+</tr>
+<tr>
+<td>DET_OUT</td>
+<td>输出</td>
+<td>0~2.5V (AD8307)</td>
+<td>STM32 ADC-IN3</td>
+<td>对数检波输出, 25mV/dB</td>
+</tr>
+<tr>
+<td>TJC_TX</td>
+<td>输出</td>
+<td>3.3V UART</td>
+<td>TJC 屏 RX</td>
+<td>MCU→TJC 指令</td>
+</tr>
+<tr>
+<td>TJC_RX</td>
+<td>输入</td>
+<td>3.3V UART</td>
+<td>TJC 屏 TX</td>
+<td>TJC 触摸回传</td>
+</tr>
+<tr>
+<td>USB_D+/D-</td>
+<td>双向</td>
+<td>USB 2.0</td>
+<td>STM32 USB_OTG_FS + 保护</td>
+<td>固件升级、调试</td>
+</tr>
+<tr>
+<td>SWD_SWDIO</td>
+<td>双向</td>
+<td>3.3V</td>
+<td>SWD 调试口</td>
+<td>编程调试</td>
+</tr>
+<tr>
+<td>SWD_SWCLK</td>
+<td>输入</td>
+<td>3.3V</td>
+<td>SWD 调试口</td>
+<td>编程调试</td>
+</tr>
+<tr>
+<td>I2C_SCL</td>
+<td>输出</td>
+<td>3.3V</td>
+<td>Si5351A SCL + 上拉</td>
+<td>DDS 配置</td>
+</tr>
+<tr>
+<td>I2C_SDA</td>
+<td>双向</td>
+<td>3.3V</td>
+<td>Si5351A SDA + 上拉</td>
+<td>DDS 配置</td>
+</tr>
+<tr>
+<td>SPI/QSPI</td>
+<td>-</td>
+<td>3.3V</td>
+<td>W25Q64JV</td>
+<td>外部程序存储, 可选</td>
+</tr>
+</tbody>
+</table>
+<h2>电源树</h2>
+<h3>电源轨</h3>
+<pre><code>                          ┌─────────────────────┐
+USB 5V ─┬─────────────────┤  理想二极管 (SS34)   ├──┐
+         │                 └─────────────────────┘  │
+         │                                           ├──→ 5V_RAW (5.0V)
+3S LiPo (9.6-12.6V) ─→ LM2596 (Buck, 5V) ──────────┘
+                              │
+        ┌─────────────────────┼──────────────────────┐
+        │                     │                      │
+    ADP150-3.3            AMS1117-3.3            TJC 5V
+    (低噪声 LDO)          (数字 LDO)              直供
+        │                     │
+        │                 VCC_3V3_DIG (3.3V)
+        │                     │
+    VCC_3V3_ANA          STM32H750 → 1.2V (内置 LDO)
+    (3.3V 模拟电源)       W25Q64
+    AD8331 VDD           Si5351A VDD
+    SA612A VCC (5V)      (3.3V)
+    OPA2365 VCC+
+    AD8307 VDD
+    REF3033 (参考)
+</code></pre>
+<h3>电流预算</h3>
+<table>
+<thead>
+<tr>
+<th>电源轨</th>
+<th>电压</th>
+<th>最大电流</th>
+<th>主要负载</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5V_RAW</td>
+<td>5.0V</td>
+<td>500mA</td>
+<td>AD8331 (25mA), SA612A×2 (5mA), OPA2365×2 (10mA), TJC 屏 (~100mA), AD8307 (7.5mA)</td>
+</tr>
+<tr>
+<td>VCC_3V3_DIG</td>
+<td>3.3V</td>
+<td>300mA</td>
+<td>STM32H750 (~200mA), Si5351A (25mA), W25Q64 (20mA), 上拉/接口</td>
+</tr>
+<tr>
+<td>VCC_3V3_ANA</td>
+<td>3.3V</td>
+<td>50mA</td>
+<td>OPA2365 模拟部分, REF3033, ADC 参考</td>
+</tr>
+<tr>
+<td>VREF+</td>
+<td>3.3V</td>
+<td>10mA</td>
+<td>STM32H7 ADC 参考电压 (来自 REF3033)</td>
+</tr>
+</tbody>
+</table>
+<h3>上电时序</h3>
+<ol>
+<li>5V_RAW 上电 (LM2596 / USB)</li>
+<li>VCC_3V3_DIG 上电 (AMS1117 输出)</li>
+<li>VCC_3V3_ANA 上电 (ADP150 输出)</li>
+<li>STM32H7 复位释放 (内置 POR)</li>
+<li>STM32 初始化 → 配置 Si5351A → 开始扫频</li>
+</ol>
+<h2>PCB 约束</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>层数</strong></td>
+<td>4 层 (顶层信号 + GND + 电源 + 底层信号)</td>
+</tr>
+<tr>
+<td><strong>板材</strong></td>
+<td>FR-4, Tg ≥ 130°C</td>
+</tr>
+<tr>
+<td><strong>板厚</strong></td>
+<td>1.6mm</td>
+</tr>
+<tr>
+<td><strong>阻抗</strong></td>
+<td>RF 输入路径 50Ω 微带线 (线宽 ~1.8mm @ 1.6mm FR-4)</td>
+</tr>
+<tr>
+<td><strong>模拟分区</strong></td>
+<td>顶层左 1/3 为模拟区 (RF 输入→VGA→混频器→LPF), 远离数字区域</td>
+</tr>
+<tr>
+<td><strong>数字分区</strong></td>
+<td>顶层右 2/3 为数字区 (STM32 + Si5351A + W25Q64 + TJC 接口)</td>
+</tr>
+<tr>
+<td><strong>电源分区</strong></td>
+<td>底部中层为电源层, 分割 5V / 3V3_DIG / 3V3_ANA</td>
+</tr>
+<tr>
+<td><strong>地平面</strong></td>
+<td>第二层完整 GND, 模拟区下方不分割</td>
+</tr>
+<tr>
+<td><strong>关键走线</strong></td>
+<td>RF_IN 从 BNC 到 AD8331 走最短路径; LO 走线远离 RF_IN 避免耦合</td>
+</tr>
+<tr>
+<td><strong>ADC 输入</strong></td>
+<td>I/Q 基带信号走差分/屏蔽走线, 远离时钟和数字信号</td>
+</tr>
+<tr>
+<td><strong>隔离</strong></td>
+<td>模拟/数字地通过 0Ω 电阻/磁珠单点连接于 ADC 下方</td>
+</tr>
+<tr>
+<td><strong>去耦</strong></td>
+<td>每颗 IC 放置 0.1µF+10µF 去耦电容, 尽量靠近电源引脚</td>
+</tr>
+<tr>
+<td><strong>散热</strong></td>
+<td>LM2596 下方铺设铜皮散热; 无其他高热器件</td>
+</tr>
+</tbody>
+</table>
+<h2>关键性能指标</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>目标</th>
+<th>约束来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模拟带宽 (RF)</td>
+<td>100kHz ~ 10MHz</td>
+<td>AD8331 (DC-120MHz) + SA612A (DC-500MHz)</td>
+</tr>
+<tr>
+<td>基带带宽</td>
+<td>DC ~ 200kHz (可切换)</td>
+<td>4 阶有源 LPF, 截止频率 200kHz</td>
+</tr>
+<tr>
+<td>AGC 增益范围</td>
+<td>-4.5dB ~ +55.5dB</td>
+<td>AD8331 LNA+VGA+Postamp</td>
+</tr>
+<tr>
+<td>输入动态</td>
+<td>0.1mVpp ~ 1Vpp (80dB)</td>
+<td>AD8331 增益 + AD8307 检波闭环</td>
+</tr>
+<tr>
+<td>ADC 采样率</td>
+<td>≥ 500kHz (每通道 I/Q)</td>
+<td>STM32H7 双 ADC 同步模式</td>
+</tr>
+<tr>
+<td>ADC 分辨率</td>
+<td>12-bit (有效 ~10-bit)</td>
+<td>STM32H7 内置 ADC</td>
+</tr>
+<tr>
+<td>载波频率精度</td>
+<td>≤ 1%</td>
+<td>Si5351A 晶振精度 ±25ppm</td>
+</tr>
+<tr>
+<td>调制识别准确率</td>
+<td>≥ 90% (仿真验证)</td>
+<td>signal_toolkit 算法移植</td>
+</tr>
+<tr>
+<td>响应时间</td>
+<td>≤ 2s</td>
+<td>扫频 ~500ms + 分析 ~500ms</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 验证计划</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+</ul>
+<h2>EVT (工程验证)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>测试项</th>
+<th>方法</th>
+<th>通过标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>电源上电时序</td>
+<td>示波器 4 通道测各电源轨</td>
+<td>各轨按序建立, 无过冲 &gt;10%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>AGC 闭环功能</td>
+<td>输入 1Vpp/10MHz 正弦, 测 AD8331 输出</td>
+<td>输出稳定在 ADC 满量程 80%±5%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>载波扫频检测</td>
+<td>信号源 5MHz/-20dBm, 检查 AD8307 输出峰值</td>
+<td>检测频率误差 &lt;5%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>IQ 混频器功能</td>
+<td>信号源 AM 1MHz/80%, 测 LPF 后 I/Q</td>
+<td>解调波形幅度误差 &lt;10%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>串口屏通讯</td>
+<td>发送文字指令</td>
+<td>屏幕正确显示</td>
+</tr>
+<tr>
+<td>6</td>
+<td>USB 通信</td>
+<td>连接 PC, UART 打印</td>
+<td>数据正常输出</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SWD 调试</td>
+<td>连接 ST-Link/J-Link</td>
+<td>可下载/单步调试</td>
+</tr>
+<tr>
+<td>8</td>
+<td>调制识别 (AM/FM/CW)</td>
+<td>信号源产生 3 种调制</td>
+<td>识别正确率 100%</td>
+</tr>
+<tr>
+<td>9</td>
+<td>电池供电</td>
+<td>断开 USB, 使用 3S LiPo</td>
+<td>装置正常运行</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Si5351A I²C 配置</td>
+<td>逻辑分析仪抓 I²C 波形</td>
+<td>寄存器写入正确</td>
+</tr>
+</tbody>
+</table>
+<h2>DVT (设计验证)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>测试项</th>
+<th>方法</th>
+<th>通过标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>全频段扫频精度</td>
+<td>信号源 100kHz~10MHz 步进 500kHz</td>
+<td>频率误差 &lt;2%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>全幅度动态范围</td>
+<td>0.1mVpp ~ 1Vpp, 10 个点</td>
+<td>AGC 稳定锁定, 无振荡</td>
+</tr>
+<tr>
+<td>3</td>
+<td>7 种调制识别</td>
+<td>AM/FM/PM/DSB/SSB/CW/FSK 信号源</td>
+<td>识别正确率 ≥ 90%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>参数估计精度</td>
+<td>载波频率, m, Δf, Δθ</td>
+<td>误差 &lt;5% (参考信号源设定值)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>响应时间</td>
+<td>示波器测从输入变化到显示变化</td>
+<td>≤ 2s</td>
+</tr>
+<tr>
+<td>6</td>
+<td>温度适应性</td>
+<td>恒温箱 10°C / 40°C</td>
+<td>参数漂移 &lt;2%</td>
+</tr>
+<tr>
+<td>7</td>
+<td>电源切换瞬态</td>
+<td>USB↔电池切换时测 VCC</td>
+<td>电压跌落 &lt;5%</td>
+</tr>
+<tr>
+<td>8</td>
+<td>ESD</td>
+<td>接触 ±4kV (IEC 61000-4-2)</td>
+<td>可自动恢复, 不损坏</td>
+</tr>
+<tr>
+<td>9</td>
+<td>SI5351A 相位噪声</td>
+<td>频谱仪测 LO 输出</td>
+<td>&lt;=80dBc/Hz @10kHz offset</td>
+</tr>
+<tr>
+<td>10</td>
+<td>I/Q 通道一致性</td>
+<td>输入同频同相信号, 测 I/Q 幅度相位</td>
+<td>幅度差 &lt;1dB, 相位差 &lt;5°</td>
+</tr>
+</tbody>
+</table>
+<h2>PVT (量产验证)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>测试项</th>
+<th>方法</th>
+<th>通过标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>一致性</td>
+<td>5 块样板全功能测试</td>
+<td>全部通过 DVT 标准</td>
+</tr>
+<tr>
+<td>2</td>
+<td>烧录效率</td>
+<td>自动化烧录</td>
+<td>≤ 30s/板</td>
+</tr>
+<tr>
+<td>3</td>
+<td>校准流程</td>
+<td>AGC 零点/满度校准</td>
+<td>自动校准 ≤ 60s</td>
+</tr>
+<tr>
+<td>4</td>
+<td>环境测试</td>
+<td>40°C/90%RH 持续 8h</td>
+<td>功能正常</td>
+</tr>
+<tr>
+<td>5</td>
+<td>替代料验证</td>
+<td>AD8307 → AD8313, AD8331 → AD603</td>
+<td>性能指标达 DVT 标准 80%</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 决策门</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+</ul>
+<h2>已确定 (可进入原理图设计)</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>架构方向</td>
+<td>STM32H750 + SA612A × 2 离散 IQ 混频 (用户确认)</td>
+</tr>
+<tr>
+<td>MCU</td>
+<td>STM32H750VBT6, 立创 EDA 封装已内置</td>
+</tr>
+<tr>
+<td>DDS</td>
+<td>Si5351A-B-GTR, 3 路输出, I²C 控制</td>
+</tr>
+<tr>
+<td>IQ 混频</td>
+<td>SA612A × 2 双平衡混频器 (淘宝可购)</td>
+</tr>
+<tr>
+<td>VGA</td>
+<td>AD8331ARQZ, LNA+VGA+Postamp 单芯片完成</td>
+</tr>
+<tr>
+<td>对数检波</td>
+<td>AD8307ARZ, 92dB 动态范围</td>
+</tr>
+<tr>
+<td>基带运放</td>
+<td>OPA2365 × 2, 50MHz, 轨到轨</td>
+</tr>
+<tr>
+<td>显示</td>
+<td>陶晶弛 TJC 串口屏 (型号待定, 2.4" 或 3.5")</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>USB 5V + 3S LiPo (9.6-12.6V), LM2596→5V, AMS1117→3.3V</td>
+</tr>
+<tr>
+<td>输入接口</td>
+<td>BNC 50Ω</td>
+</tr>
+<tr>
+<td>工作模式</td>
+<td>AGC 闭环自动增益控制</td>
+</tr>
+<tr>
+<td>载波检测</td>
+<td>DDS 扫频 + AD8307 峰值搜索</td>
+</tr>
+<tr>
+<td>Datasheet 已下载</td>
+<td>STM32H750VBT6, SA612A, AD8307, AD8331, Si5351A</td>
+</tr>
+</tbody>
+</table>
+<h2>待确认</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>建议</th>
+<th>依赖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TJC 屏幕具体型号</td>
+<td>TJC3224T024_011 (2.4") 或 TJC4832T035_011 (3.5")</td>
+<td>用户选择</td>
+</tr>
+<tr>
+<td>外部 QSPI Flash 是否需要</td>
+<td>W25Q64JV (8MB) 用于存储固件和字库</td>
+<td>固件大小评估后决定</td>
+</tr>
+<tr>
+<td>基带 LPF 截止频率</td>
+<td>建议 200kHz (固定), 或使用数字电位计切换 50/100/200kHz</td>
+<td>实测调制信号带宽后决定</td>
+</tr>
+<tr>
+<td>AD8307 采购途径</td>
+<td>LCSC 缺货, 淘宝模块 ¥25-35</td>
+<td>用户确认采购渠道</td>
+</tr>
+<tr>
+<td>3S LiPo 电池容量</td>
+<td>建议 2200mAh, 可连续工作约 2-3 小时</td>
+<td>用户确认</td>
+</tr>
+<tr>
+<td>是否需要 USB 隔离</td>
+<td>调试用不必要, 竞赛现场可能有共地要求</td>
+<td>用户确认</td>
+</tr>
+</tbody>
+</table>
+<h2>高风险项</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>影响</th>
+<th>概率</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SA612A LO 90° 相移精度不足</td>
+<td>I/Q 镜像抑制下降, 影响解调精度</td>
+<td>中</td>
+<td>Si5351A 两路输出 (OUT0/OUT1) 用各自相位寄存器设置精确 90°, 替代外部 RC 移相网络</td>
+</tr>
+<tr>
+<td>AD8307 缺货</td>
+<td>无法到货, 延迟开发</td>
+<td>高</td>
+<td>备选 1: 淘宝 AD8307 模块; 备选 2: 换 AD8313; 备选 3: 用 STM32 ADC 直接采样 + FFT 峰值检测替代扫频</td>
+</tr>
+<tr>
+<td>AD8331 低库存 (LCSC 仅 6 件)</td>
+<td>买不到, 需换方案</td>
+<td>高</td>
+<td>备选 1: 淘宝 AD8331 模块; 备选 2: AD603 + 外部 LNA (2SC3356); 备选 3: VCA821</td>
+</tr>
+<tr>
+<td>I/Q 通道增益/相位失配</td>
+<td>AM 解调失真, 镜像串扰</td>
+<td>中</td>
+<td>软件校准: 输入已知载波, 测量 I/Q 幅度比和相位差后补偿</td>
+</tr>
+<tr>
+<td>STM32H750 内部 Flash 仅 128KB</td>
+<td>固件放不下</td>
+<td>中</td>
+<td>使用外部 QSPI Flash (W25Q64, 8MB) xip 执行, 或升级为 STM32H743 (2MB Flash)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>2023-D 信号调制方式识别与参数估计装置 — 模块原理图</h1>
+<ul>
+<li><strong>日期：</strong> 2026-06-10</li>
+<li><strong>输出方式：</strong> ASCII 框图 + 结构化连接表</li>
+<li><strong>目标 EDA：</strong> 立创 EDA (EasyEDA)</li>
+</ul>
+<hr>
+<h2>模块 1：射频前端 (BNC → AD8331 VGA)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  BNC           ESD          DC-BLOCK        50Ω Term
+  J1 ───── PESD5V0S1UB ─── 100nF/50V ──┬── 50Ω ──┬── GND
+                                        │         │
+                                     AD8331.INH  AD8331.INL
+                                        │
+                                   AD8331.LNA
+                                     增益 19dB
+                                        │
+                                   ┌────┴────┐
+                                   │  X-AMP  │  VGA 48dB range
+                                   │  VGA    │  Gain = 25mV/dB
+                                   └────┬────┘
+                                        │
+                                   AD8331.VOH, VOL (差分输出)
+                                        │
+                                   到 混频器
+</code></pre>
+<h3>连接表</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RF_IN</td>
+<td>BNC J1 中心针</td>
+<td>PESD5V0S1UB Pin1</td>
+<td>50Ω 输入</td>
+</tr>
+<tr>
+<td>RF_IN</td>
+<td>PESD5V0S1UB Pin2</td>
+<td>C1 (100nF/50V)</td>
+<td>DC-block, X7R</td>
+</tr>
+<tr>
+<td>RF_IN</td>
+<td>C1</td>
+<td>R1 (49.9Ω 1% 0603) → GND</td>
+<td>50Ω 终端匹配</td>
+</tr>
+<tr>
+<td>RF_IN</td>
+<td>C1</td>
+<td>AD8331 INH (Pin10)</td>
+<td>LNA 正输入端</td>
+</tr>
+<tr>
+<td>GND_ANA</td>
+<td>BNC J1 外壳</td>
+<td>GND 平面</td>
+<td>接地</td>
+</tr>
+<tr>
+<td>GND_ANA</td>
+<td>PESD5V0S1UB Pin3</td>
+<td>GND 平面</td>
+<td>ESD 泄放地</td>
+</tr>
+<tr>
+<td>LNA_INL</td>
+<td>AD8331 INL (Pin11)</td>
+<td>R2 (49.9Ω 1%) → GND</td>
+<td>LNA 负输入端阻抗匹配</td>
+</tr>
+<tr>
+<td>LNA_BIAS</td>
+<td>AD8331 RBIAS (Pin19)</td>
+<td>R3 (10kΩ 1%) → GND</td>
+<td>偏置电流设置，参考手册</td>
+</tr>
+<tr>
+<td>VGA_GAIN</td>
+<td>AD8331 GPOS (Pin7)</td>
+<td>STM32 DAC1_OUT</td>
+<td>AGC 控制电压 0~1.4V, 25mV/dB</td>
+</tr>
+<tr>
+<td>VGA_GAIN_REF</td>
+<td>AD8331 GNEG (Pin6)</td>
+<td>GND_ANA</td>
+<td>单端增益控制</td>
+</tr>
+<tr>
+<td>VGA_OUTP</td>
+<td>AD8331 VOH (Pin15)</td>
+<td>到 混频器 I/Q RF 输入 (SA612A-I Pin1)</td>
+<td>VGA 差分正输出</td>
+</tr>
+<tr>
+<td>VGA_OUTN</td>
+<td>AD8331 VOL (Pin14)</td>
+<td>GND_ANA (单端驱动 SA612A)</td>
+<td>VGA 差分负输出，接地</td>
+</tr>
+<tr>
+<td>VGA_5V</td>
+<td>AD8331 VPOS (Pin17)</td>
+<td>5V_RAW (电源轨)</td>
+<td>VGA 供电</td>
+</tr>
+<tr>
+<td>VGA_GND</td>
+<td>AD8331 COMM (Pin12,13,18,20)</td>
+<td>GND_ANA</td>
+<td>所有 GND 引脚共地</td>
+</tr>
+<tr>
+<td>VGA_BYP</td>
+<td>AD8331 VPSI (Pin21/裸露焊盘)</td>
+<td>GND_ANA</td>
+<td>芯片底部焊盘接地</td>
+</tr>
+</tbody>
+</table>
+<h3>关键参数</h3>
+<ul>
+<li><strong>C1</strong>: 100nF/50V X7R, 隔直电容, 高通截止 f_c = 1/(2π<em>50Ω</em>100nF) ≈ 32kHz &lt; 100kHz ✓</li>
+<li><strong>R1</strong>: 49.9Ω ±1%, 50Ω 终端匹配</li>
+<li><strong>R3</strong>: 10kΩ ±1%, AD8331 LNA 偏置电流设置</li>
+<li><strong>增益控制电压</strong>: STM32 DAC 输出 0~1.4V → AD8331 增益 -4.5~+55.5dB</li>
+</ul>
+<hr>
+<h2>模块 2：IQ 混频器 (SA612A × 2 + Si5351A LO)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>                    Si5351A
+                 ┌────────────┐
+                 │ OUT0 (CLK0)│─── LO_I (0°)  ─→ SA612A-I Pin6
+                 │ OUT1 (CLK1)│─── LO_Q (90°) ─→ SA612A-Q Pin6
+                 │ OUT2 (CLK2)│── (未用)
+                 └────────────┘
+                    I²C: SCL/SDA ─→ STM32
+
+  VGA_OUTP ──┬── C2 ─┬── SA612A-I Pin1 (RF+)
+             │       └── R4 ─→ GND
+             │
+             └── C3 ─┬── SA612A-Q Pin1 (RF+)
+                     └── R5 ─→ GND
+
+  SA612A-I Pin4 (OUT+) ─── R6 ─┬── C4 ──→ LPF_I (到模块3)
+                               └── R7 ─→ GND
+
+  SA612A-Q Pin4 (OUT+) ─── R8 ─┬── C5 ──→ LPF_Q (到模块3)
+                               └── R9 ─→ GND
+</code></pre>
+<h3>I 路混频器连接表 (SA612A-I)</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RF_I</td>
+<td>SA612A-I Pin1 (RF+)</td>
+<td>C2 (100pF) → VGA_OUTP</td>
+<td>RF 输入, 隔直</td>
+</tr>
+<tr>
+<td>RF_BIAS_I</td>
+<td>SA612A-I Pin2 (GND)</td>
+<td>GND_ANA</td>
+<td>RF 地</td>
+</tr>
+<tr>
+<td>OUTPUT_I</td>
+<td>SA612A-I Pin4 (OUT+)</td>
+<td>C4 → R6, R7→GND</td>
+<td>混频输出, 负载 1.5kΩ</td>
+</tr>
+<tr>
+<td>GND_I</td>
+<td>SA612A-I Pin3 (GND)</td>
+<td>GND_ANA</td>
+<td>地</td>
+</tr>
+<tr>
+<td>LO_I</td>
+<td>SA612A-I Pin6 (OSC)</td>
+<td>C6 (100pF) → Si5351A CLK0</td>
+<td>LO 输入, 隔直</td>
+</tr>
+<tr>
+<td>VCC_MIXER</td>
+<td>SA612A-I Pin5 (VCC)</td>
+<td>5V_RAW (通过 R10/10Ω 隔离)</td>
+<td>5V 供电, 2.4mA</td>
+</tr>
+<tr>
+<td>NC_I</td>
+<td>SA612A-I Pin7,8</td>
+<td>悬空</td>
+<td>内部振荡器未用</td>
+</tr>
+</tbody>
+</table>
+<h3>Q 路混频器连接表 (SA612A-Q)</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RF_Q</td>
+<td>SA612A-Q Pin1 (RF+)</td>
+<td>C3 (100pF) → VGA_OUTP</td>
+<td>RF 输入, 隔直</td>
+</tr>
+<tr>
+<td>OUTPUT_Q</td>
+<td>SA612A-Q Pin4 (OUT+)</td>
+<td>C5 → R8, R9→GND</td>
+<td>混频输出, 负载 1.5kΩ</td>
+</tr>
+<tr>
+<td>LO_Q</td>
+<td>SA612A-Q Pin6 (OSC)</td>
+<td>C7 (100pF) → Si5351A CLK1</td>
+<td>LO 输入, 90° 移相</td>
+</tr>
+<tr>
+<td>VCC_MIXER</td>
+<td>SA612A-Q Pin5 (VCC)</td>
+<td>5V_RAW (通过 R10/10Ω 隔离)</td>
+<td>5V 供电</td>
+</tr>
+</tbody>
+</table>
+<h3>关键参数</h3>
+<ul>
+<li><strong>C2/C3</strong>: 100pF NPO/COG, RF 隔直电容</li>
+<li><strong>C6/C7</strong>: 100pF NPO/COG, LO 隔直电容</li>
+<li><strong>R4/R5</strong>: 1kΩ → GND, RF 输入直流偏置</li>
+<li><strong>R6/R8</strong>: 1.5kΩ, 混频器输出负载电阻</li>
+<li><strong>R7/R9</strong>: 1.5kΩ → GND, 输出下拉</li>
+<li><strong>R10</strong>: 10Ω/0603, VCC 隔离电阻, 去耦 0.1µF+10µF to GND</li>
+</ul>
+<hr>
+<h2>模块 3：基带低通滤波器 + ADC 驱动 (OPA2365)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  OUTPUT_I ──┬── R11 ──┬── C8 ──┬── OPA2365A (Unity Gain)
+             │         │       │    ┌──────────┐
+             │         C9      │    │ Pin3 (+)←── 偏置
+             │         │       │    │ Pin2 (-)←── R12─┬── OUT
+             │         GND     │    └─┬────────┘      │
+             │                  │     │               C10
+             │                  │     │               │
+             │                  └─────┤   ←──R13 ←───┘
+             │                         │
+             └── R14 ──┬── C11 ──┬────┘  4th Order Sallen-Key LPF
+                       │         │           f_c ≈ 200kHz
+                       C12       │
+                       │         │
+                       GND       OPA2365B → ADC_IN1
+
+                       (第二级 LPF, 结构同上)
+
+  ADC_IN1 ─── R15 (51Ω) ──┬── STM32 ADC1_INP (PA6)
+                           │
+                          C13 (10pF) ─→ GND_ANA
+</code></pre>
+<h3>连接表 (I 路基带 LPF, 4 阶 Sallen-Key)</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IF_I</td>
+<td>R11 (1kΩ 1%)</td>
+<td>C8 (330pF NPO/COG)</td>
+<td>一阶 RC 滤波</td>
+</tr>
+<tr>
+<td>IF_I</td>
+<td>C8</td>
+<td>OPA2365A Pin3 (+)</td>
+<td>Sallen-Key 正输入</td>
+</tr>
+<tr>
+<td>LPF_GND</td>
+<td>C9 (330pF NPO/COG)</td>
+<td>GND_ANA</td>
+<td>滤波电容到地</td>
+</tr>
+<tr>
+<td>LPF_FB</td>
+<td>OPA2365A Pin1 (OUT)</td>
+<td>R12 (1kΩ 1%) → OPA2365A Pin2 (-)</td>
+<td>反馈电阻</td>
+</tr>
+<tr>
+<td>LPF_FB</td>
+<td>OPA2365A Pin2 (-)</td>
+<td>C10 (330pF) → OPA2365A Pin1</td>
+<td>反馈电容</td>
+</tr>
+<tr>
+<td>LPF_BIAS</td>
+<td>OPA2365A Pin3 (+)</td>
+<td>R13 → ADC_IN_BIAS (VCC/2)</td>
+<td>偏置到 1.65V (用于单电源)</td>
+</tr>
+<tr>
+<td>LPF_OUT1</td>
+<td>OPA2365A Pin1</td>
+<td>R14 (1kΩ 1%)</td>
+<td>第二级输入</td>
+</tr>
+<tr>
+<td>LPF_OUT1</td>
+<td>R14</td>
+<td>C11 (330pF) → OPA2365B Pin5 (+)</td>
+<td>第二级 Sallen-Key 输入</td>
+</tr>
+<tr>
+<td>ADC_IN</td>
+<td>OPA2365B Pin7 (OUT)</td>
+<td>R15 (51Ω 0603)</td>
+<td>ADC 驱动输出, 串联限流</td>
+</tr>
+<tr>
+<td>ADC_IN</td>
+<td>R15</td>
+<td>C13 (10pF NPO) → GND</td>
+<td>ADC 输入采样电容</td>
+</tr>
+<tr>
+<td>ADC_IN</td>
+<td>R15</td>
+<td>STM32 PA6 (ADC1_INP)</td>
+<td>到 MCU ADC 通道</td>
+</tr>
+</tbody>
+</table>
+<h3>关键参数</h3>
+<ul>
+<li><strong>LPF 截止频率</strong>: f_c = 1/(2π<em>1kΩ</em>330pF) ≈ 482kHz (略有偏高, 可调整至 200kHz)</li>
+<li><strong>修正参数</strong>: R11=R12=R14=3.3kΩ, C8=C9=C10=C11=330pF → f_c ≈ 144kHz (更合适)</li>
+<li><strong>偏置电压</strong>: 使用电阻分压 (R16/R17=10kΩ) 从 VCC_3V3_ANA 获取 1.65V, 经 OPA2365 缓冲后供所有 LPF 使用</li>
+<li><strong>Q 路完全相同</strong>, 使用 OPA2365 的另一颗双运放</li>
+</ul>
+<hr>
+<h2>模块 4：对数检波器 (AD8307)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  VGA_OUTP ──┬── C14 (100nF) ─┬── AD8307 Pin1 (INP)
+             │                │
+             └── C15 (10pF) ──┘
+                               │
+                          AD8307 Pin8 (OUT) ──┬── R18 (51Ω) ──→ STM32 ADC_IN3 (PA7)
+                                              │
+                                             C16 (10nF) → GND
+
+  AD8307 Pin2 (INN) ──── C17 (100nF) ──→ GND
+
+  AD8307 Pin3 (COMM) ──── GND_ANA
+  AD8307 Pin4 (ENB) ───── STM32 GPIO (高电平=禁用)
+  AD8307 Pin5 (POS) ───── 5V_RAW (通过 R19/10Ω)
+  AD8307 Pin6 (OUT) ───── (输出)
+  AD8307 Pin7 (VPS) ───── 5V_RAW
+  AD8307 Pin8 (OUT) ───── (见上)
+</code></pre>
+<h3>连接表</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DET_IN</td>
+<td>AD8307 Pin1 (INP)</td>
+<td>C14 (100nF X7R) → VGA_OUTP</td>
+<td>AC 耦合输入</td>
+</tr>
+<tr>
+<td>DET_IN</td>
+<td>AD8307 Pin1</td>
+<td>C15 (10pF NPO) → GND</td>
+<td>低通滤波, 抗混叠</td>
+</tr>
+<tr>
+<td>DET_GND</td>
+<td>AD8307 Pin2 (INN)</td>
+<td>C17 (100nF) → GND_ANA</td>
+<td>负输入端 AC 耦合</td>
+</tr>
+<tr>
+<td>DET_GND</td>
+<td>AD8307 Pin3 (COMM)</td>
+<td>GND_ANA</td>
+<td>公共地</td>
+</tr>
+<tr>
+<td>DET_EN</td>
+<td>AD8307 Pin4 (ENB)</td>
+<td>STM32 GPIO (PB0)</td>
+<td>使能, 高电平=禁用, 低=启用</td>
+</tr>
+<tr>
+<td>DET_5V</td>
+<td>AD8307 Pin5,7 (POS,VPS)</td>
+<td>5V_RAW, 0.1µF+10µF → GND</td>
+<td>供电</td>
+</tr>
+<tr>
+<td>DET_OUT</td>
+<td>AD8307 Pin6,8 (OUT)</td>
+<td>R18 (51Ω) + C16 (10nF) → STM32 PA7</td>
+<td>检波输出, 25mV/dB</td>
+</tr>
+</tbody>
+</table>
+<h3>关键参数</h3>
+<ul>
+<li><strong>输出斜率</strong>: 25mV/dB</li>
+<li><strong>输入范围</strong>: -75dBm ~ +17dBm (50Ω 系统)</li>
+<li><strong>输出范围</strong>: 0.25V ~ 2.5V (对应 -75dBm ~ +17dBm)</li>
+<li><strong>响应时间</strong>: &lt;500ns, 满足扫频需求</li>
+</ul>
+<hr>
+<h2>模块 5：DDS/本振 (Si5351A)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  25MHz XTAL
+  Y1 ──┬── XTAL_IN ───┬── Si5351A Pin1 (XTAL)
+       │               │
+      C18             C19
+       │               │
+      GND             GND
+
+  Si5351A
+  Pin2  GND
+  Pin3  VDD ── 3V3_DIG (0.1µF+10µF → GND)
+  Pin4  VDD
+  Pin5  SDA ──┬── STM32 PB7 (I2C1_SDA)
+              └── R20 (4.7kΩ) → 3V3_DIG
+  Pin6  SCL ──┬── STM32 PB6 (I2C1_SCL)
+              └── R21 (4.7kΩ) → 3V3_DIG
+  Pin7  CLK0 ── C6 (100pF) ──→ SA612A-I Pin6 (LO_I, 0°)
+  Pin8  CLK1 ── C7 (100pF) ──→ SA612A-Q Pin6 (LO_Q, 90°)
+  Pin9  CLK2 ── 悬空 (未用)
+  Pin10 GND
+</code></pre>
+<h3>连接表</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XTAL</td>
+<td>Y1 (25MHz) Pin1</td>
+<td>Si5351A Pin1 (XTAL)</td>
+<td>并联谐振晶振</td>
+</tr>
+<tr>
+<td>XTAL</td>
+<td>Y1 Pin2</td>
+<td>Si5351A Pin1</td>
+<td>负载电容内部集成</td>
+</tr>
+<tr>
+<td>XTAL_GND</td>
+<td>Y1 Pin3,4</td>
+<td>GND 平面</td>
+<td>晶振外壳接地</td>
+</tr>
+<tr>
+<td>DDS_VDD</td>
+<td>Si5351A Pin3,4 (VDD)</td>
+<td>VCC_3V3_DIG</td>
+<td>3.3V 供电</td>
+</tr>
+<tr>
+<td>DDS_GND</td>
+<td>Si5351A Pin2,10 (GND)</td>
+<td>GND_平面</td>
+<td>地</td>
+</tr>
+<tr>
+<td>I2C_SCL</td>
+<td>Si5351A Pin6 (SCL)</td>
+<td>STM32 PB6 + R21 (4.7kΩ)→3V3</td>
+<td>I²C 时钟, 100kHz</td>
+</tr>
+<tr>
+<td>I2C_SDA</td>
+<td>Si5351A Pin5 (SDA)</td>
+<td>STM32 PB7 + R20 (4.7kΩ)→3V3</td>
+<td>I²C 数据</td>
+</tr>
+<tr>
+<td>LO_I</td>
+<td>Si5351A Pin7 (CLK0)</td>
+<td>C6 (100pF) → SA612A-I Pin6</td>
+<td>I 路 LO, 0° 相位</td>
+</tr>
+<tr>
+<td>LO_Q</td>
+<td>Si5351A Pin8 (CLK1)</td>
+<td>C7 (100pF) → SA612A-Q Pin6</td>
+<td>Q 路 LO, 90° 相位</td>
+</tr>
+</tbody>
+</table>
+<h3>Si5351A 寄存器配置要点</h3>
+<ul>
+<li><strong>晶体频率</strong>: 25MHz</li>
+<li><strong>PLL 配置</strong>: PLLA 用作 CLK0/CLK1 源, PLLB 悬空</li>
+<li><strong>CLK0 相位</strong>: 0° (寄存器 MSNA_PHASE_OFFSET = 0)</li>
+<li><strong>CLK1 相位</strong>: 90° (寄存器 MSNA_PHASE_OFFSET = 1/4 分频比)</li>
+<li><strong>输出幅度</strong>: 2mA 驱动 (寄存器 CLKx_DRV_STRENGTH = 2)</li>
+<li><strong>输出格式</strong>: 方波 (寄存器 CLKx_INV = 0)</li>
+</ul>
+<hr>
+<h2>模块 6：MCU 模块 (STM32H750VBT6)</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  ┌──────────────────────────────────────────────────┐
+  │                  STM32H750VBT6                   │
+  │  LQFP-100                                        │
+  │                                                  │
+  │  ADC1_INP(PA6) ←── 基带 I (模块3)                │
+  │  ADC1_INP(PA7) ←── 基带 Q                       │
+  │  ADC1_INP(PC5) ←── AD8307 检波 (模块4)          │
+  │                                                  │
+  │  DAC1_OUT(PA4) ──→ AD8331 GPOS (AGC)            │
+  │                                                  │
+  │  UART7_TX(PF7) ──→ TJC 屏 RX                    │
+  │  UART7_RX(PF6) ←── TJC 屏 TX                    │
+  │                                                  │
+  │  I2C1_SCL(PB6) ──→ Si5351A SCL                  │
+  │  I2C1_SDA(PB7) ──→ Si5351A SDA                  │
+  │                                                  │
+  │  QSPI: P F8/F9/F10/F11 ──→ W25Q64JV (外部 Flash)│
+  │                                                  │
+  │  SWD: PA13(SWDIO) + PA14(SWCLK)                 │
+  │                                                  │
+  │  USB_OTG_FS: PA11(D-) + PA12(D+)                │
+  │                                                  │
+  │  RCC: PC14(OSC32_IN)+PC15(OSC32_OUT) (32.768kHz)│
+  │       PH0(OSC_IN)+PH1(OSC_OUT)  (8MHz)          │
+  └──────────────────────────────────────────────────┘
+</code></pre>
+<h3>关键引脚连接表</h3>
+<table>
+<thead>
+<tr>
+<th>引脚</th>
+<th>信号</th>
+<th>方向</th>
+<th>连接目标</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PA6 (ADC1_INP)</td>
+<td>ADC_I</td>
+<td>输入</td>
+<td>OPA2365B OUT (基带 I)</td>
+<td>ADC 通道 6</td>
+</tr>
+<tr>
+<td>PA7 (ADC1_INP)</td>
+<td>ADC_Q</td>
+<td>输入</td>
+<td>OPA2365D OUT (基带 Q)</td>
+<td>ADC 通道 7</td>
+</tr>
+<tr>
+<td>PC5 (ADC1_INP)</td>
+<td>ADC_DET</td>
+<td>输入</td>
+<td>AD8307 OUT</td>
+<td>ADC 通道 15</td>
+</tr>
+<tr>
+<td>PA4 (DAC1_OUT)</td>
+<td>AGC_VCTRL</td>
+<td>输出</td>
+<td>AD8331 GPOS</td>
+<td>DAC 输出 0~1.4V</td>
+</tr>
+<tr>
+<td>PB0</td>
+<td>DET_EN</td>
+<td>输出</td>
+<td>AD8307 ENB</td>
+<td>高=禁用检波器</td>
+</tr>
+<tr>
+<td>PB6 (I2C1_SCL)</td>
+<td>I2C_SCL</td>
+<td>输出</td>
+<td>Si5351A SCL + 4.7kΩ 上拉</td>
+<td>I²C 时钟</td>
+</tr>
+<tr>
+<td>PB7 (I2C1_SDA)</td>
+<td>I2C_SDA</td>
+<td>双向</td>
+<td>Si5351A SDA + 4.7kΩ 上拉</td>
+<td>I²C 数据</td>
+</tr>
+<tr>
+<td>PF6 (UART7_RX)</td>
+<td>TJC_TX</td>
+<td>输入</td>
+<td>TJC 屏 TX</td>
+<td>串口接收</td>
+</tr>
+<tr>
+<td>PF7 (UART7_TX)</td>
+<td>TJC_RX</td>
+<td>输出</td>
+<td>TJC 屏 RX</td>
+<td>串口发送</td>
+</tr>
+<tr>
+<td>PA13 (SWDIO)</td>
+<td>SWDIO</td>
+<td>双向</td>
+<td>SWD 调试口 10-pin</td>
+<td>编程调试</td>
+</tr>
+<tr>
+<td>PA14 (SWCLK)</td>
+<td>SWCLK</td>
+<td>输出</td>
+<td>SWD 调试口 10-pin</td>
+<td>编程调试</td>
+</tr>
+<tr>
+<td>PA11 (USB_DM)</td>
+<td>USB_D-</td>
+<td>双向</td>
+<td>USB-B 座 DM</td>
+<td>USB OTG FS</td>
+</tr>
+<tr>
+<td>PA12 (USB_DP)</td>
+<td>USB_D+</td>
+<td>双向</td>
+<td>USB-B 座 DP</td>
+<td>USB OTG FS</td>
+</tr>
+<tr>
+<td>PC11-14 (QSPI)</td>
+<td>QSPI_D0-3</td>
+<td>双向</td>
+<td>W25Q64JV</td>
+<td>外部 Flash</td>
+</tr>
+<tr>
+<td>PF8 (QSPI_CLK)</td>
+<td>QSPI_CLK</td>
+<td>输出</td>
+<td>W25Q64JV CLK</td>
+<td>QSPI 时钟</td>
+</tr>
+<tr>
+<td>PF9 (QSPI_CS)</td>
+<td>QSPI_CS</td>
+<td>输出</td>
+<td>W25Q64JV CS</td>
+<td>QSPI 片选</td>
+</tr>
+<tr>
+<td>BOOT0</td>
+<td>BOOT0</td>
+<td>输入</td>
+<td>10kΩ → GND (默认 User Flash)</td>
+<td>启动选择</td>
+</tr>
+</tbody>
+</table>
+<h3>MCU 基本电路</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCU_VDD</td>
+<td>STM32 Pin19,32,48,64,75,100</td>
+<td>VCC_3V3_DIG</td>
+<td>数字供电, 每组 0.1µF+10µF → GND</td>
+</tr>
+<tr>
+<td>MCU_VDDA</td>
+<td>STM32 Pin13,14</td>
+<td>VCC_3V3_ANA</td>
+<td>模拟供电, 0.1µF+10µF → GND_ANA</td>
+</tr>
+<tr>
+<td>MCU_VREF+</td>
+<td>STM32 Pin12</td>
+<td>REF3033 OUT</td>
+<td>3.3V ADC 参考</td>
+</tr>
+<tr>
+<td>MCU_VBAT</td>
+<td>STM32 Pin6</td>
+<td>VCC_3V3_DIG (或 CR1220 电池)</td>
+<td>VBAT 备用电源</td>
+</tr>
+<tr>
+<td>MCU_NRST</td>
+<td>STM32 Pin7</td>
+<td>R22 (10kΩ) → 3V3 + C20 (100nF) → GND</td>
+<td>外部复位</td>
+</tr>
+<tr>
+<td>OSC_IN</td>
+<td>STM32 PH0</td>
+<td>Y2 (8MHz) + C21/C22 (15pF)</td>
+<td>主时钟 8MHz</td>
+</tr>
+<tr>
+<td>OSC_OUT</td>
+<td>STM32 PH1</td>
+<td>Y2 (8MHz)</td>
+<td>主时钟</td>
+</tr>
+<tr>
+<td>OSC32_IN</td>
+<td>STM32 PC14</td>
+<td>Y3 (32.768kHz) + C23/C24 (12.5pF)</td>
+<td>RTC 时钟</td>
+</tr>
+<tr>
+<td>OSC32_OUT</td>
+<td>STM32 PC15</td>
+<td>Y3 (32.768kHz)</td>
+<td>RTC 时钟</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>模块 7：电源管理</h2>
+<h3>ASCII 框图</h3>
+<pre><code>  USB_5V ───┬── SS34 (D1) ─┬── 5V_RAW ──┬── AMS1117-3.3 ── VCC_3V3_DIG
+            │              │            │
+            │              │            └── ADP150-3.3 ── VCC_3V3_ANA
+  3S LiPo ──┴── LM2596 ───┘            │
+     11.1V         5V/1A                └── (直供 TJC 屏 5V)
+</code></pre>
+<h3>连接表</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>USB_5V</td>
+<td>USB-B 座 Pin1</td>
+<td>D1 SS34 (阳极)</td>
+<td>USB 5V 输入, 反接保护</td>
+</tr>
+<tr>
+<td>BAT_RAW</td>
+<td>3S LiPo JST-XH</td>
+<td>D2 SS34 (阳极)</td>
+<td>电池输入 9.6-12.6V</td>
+</tr>
+<tr>
+<td>BUCK_IN</td>
+<td>D1/D2 阴极 (合并)</td>
+<td>LM2596 VIN + 10µF+100µF → GND</td>
+<td>理想二极管 OR, 自动切换</td>
+</tr>
+<tr>
+<td>BUCK_OUT</td>
+<td>LM2596 OUT</td>
+<td>FB 反馈 (R23/R24 分压) → 5V_RAW</td>
+<td>5.0V ±2%</td>
+</tr>
+<tr>
+<td>5V_RAW</td>
+<td>BUCK_OUT</td>
+<td>各负载 (见电源树表)</td>
+<td>5V 总线</td>
+</tr>
+<tr>
+<td>5V_DIG</td>
+<td>5V_RAW</td>
+<td>AMS1117-3.3 VIN + 10µF → GND</td>
+<td>数字 LDO 输入</td>
+</tr>
+<tr>
+<td>3V3_DIG</td>
+<td>AMS1117-3.3 OUT</td>
+<td>+ 10µF + 0.1µF → GND</td>
+<td>3.3V 数字电源</td>
+</tr>
+<tr>
+<td>5V_ANA</td>
+<td>5V_RAW</td>
+<td>R25 (10Ω/0805) + C25 (47µF) → GND</td>
+<td>模拟电源去耦</td>
+</tr>
+<tr>
+<td>3V3_ANA</td>
+<td>ADP150-3.3 OUT</td>
+<td>+ 10µF + 0.1µF → GND_ANA</td>
+<td>3.3V 低噪声模拟电源</td>
+</tr>
+<tr>
+<td>VREF</td>
+<td>REF3033 IN</td>
+<td>5V_RAW + 1µF → GND</td>
+<td>参考电压输入</td>
+</tr>
+<tr>
+<td>VREF_OUT</td>
+<td>REF3033 OUT</td>
+<td>C26 (1µF) → GND + STM32 VREF+</td>
+<td>3.3V 0.2% 基准</td>
+</tr>
+</tbody>
+</table>
+<h3>电源树参数</h3>
+<table>
+<thead>
+<tr>
+<th>电源轨</th>
+<th>来源</th>
+<th>电压</th>
+<th>最大电流</th>
+<th>去耦</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5V_RAW</td>
+<td>LM2596</td>
+<td>5.0V ±2%</td>
+<td>1A</td>
+<td>100µF 电解 + 10µF MLCC</td>
+</tr>
+<tr>
+<td>VCC_3V3_DIG</td>
+<td>AMS1117-3.3</td>
+<td>3.3V ±1%</td>
+<td>800mA</td>
+<td>10µF + 0.1µF × N (每 IC)</td>
+</tr>
+<tr>
+<td>VCC_3V3_ANA</td>
+<td>ADP150-3.3</td>
+<td>3.3V ±1%</td>
+<td>150mA</td>
+<td>10µF + 0.1µF (低 ESR)</td>
+</tr>
+<tr>
+<td>5V_ANA</td>
+<td>5V_RAW via R25</td>
+<td>5.0V</td>
+<td>100mA</td>
+<td>47µF + 0.1µF</td>
+</tr>
+<tr>
+<td>VREF_OUT</td>
+<td>REF3033</td>
+<td>3.3V ±0.2%</td>
+<td>10mA</td>
+<td>1µF × 2</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>模块 8：TJC 串口屏接口</h2>
+<h3>连接表</h3>
+<table>
+<thead>
+<tr>
+<th>网络名</th>
+<th>源端</th>
+<th>目标端</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TJC_5V</td>
+<td>5V_RAW</td>
+<td>TJC 屏 VCC</td>
+<td>5V ±5%, ~100mA</td>
+</tr>
+<tr>
+<td>TJC_GND</td>
+<td>GND</td>
+<td>TJC 屏 GND</td>
+<td>共地</td>
+</tr>
+<tr>
+<td>UART_TX</td>
+<td>STM32 PF7 (UART7_TX)</td>
+<td>TJC 屏 RX</td>
+<td>MCU→TJC 指令, 3.3V TTL</td>
+</tr>
+<tr>
+<td>UART_RX</td>
+<td>STM32 PF6 (UART7_RX)</td>
+<td>TJC 屏 TX</td>
+<td>TJC→MCU 触摸回传, 3.3V TTL</td>
+</tr>
+<tr>
+<td>TJC_BUSY</td>
+<td>TJC 屏 BUSY</td>
+<td>(可选) STM32 GPIO</td>
+<td>屏忙检测, 也可省略</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>注意</strong>: 陶晶弛 TJC 屏 UART 为 3.3V TTL 电平, 与 STM32 直连, 无需电平转换。波特率建议 115200 或 921600。</p>
+</blockquote>
+<hr>
+<h2>模块连接汇总</h2>
+<pre><code>  BNC ──→ ESD ──→ AD8331(VGA) ──┬── [I] SA612A ──→ LPF ──→ OPA2365 ──→ STM32 ADC1_CH6 (PA6)
+                                  │
+                                  ├── [Q] SA612A ──→ LPF ──→ OPA2365 ──→ STM32 ADC1_CH7 (PA7)
+                                  │
+                                  └── AD8307 ──→ STM32 ADC1_CH15 (PC5)
+                                            ↑
+                                    Si5351A ── I²C ──→ STM32 I2C1 (PB6/PB7)
+                                                        │
+                                                    TJC 屏 ← UART7 (PF6/PF7)
+                                                        │
+                                                    W25Q64 ← QSPI (PF8-11/PC11-14)
+
+  电源: USB 5V ──┬── SS34 ──┬── LM2596 ── 5V_RAW ──┬── AMS1117-3.3 ── VCC_3V3_DIG
+                  │          │                      │
+                  │          │                      └── ADP150-3.3 ── VCC_3V3_ANA
+                  │          │
+  3S LiPo 11.1V ─┴── SS34 ──┘
+</code></pre>
+<p>以上全部连接表和参数可直接在立创 EDA 中进行原理图绘制。</p>
+</body>
+</html>
