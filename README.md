@@ -1,5 +1,9 @@
 # 信号及仪器仪表类电赛题目 - 总索引与项目概览
 
+[![CI](https://github.com/FahuWWWWWWW/elec-competation-signal-analyse/actions/workflows/test.yml/badge.svg)](https://github.com/FahuWWWWWWW/elec-competation-signal-analyse/actions/workflows/test.yml)
+[![Docs](https://img.shields.io/badge/docs-pdoc-blue)](https://fahuwuuuuwww.github.io/elec-competation-signal-analyse/signal_toolkit.html)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-green)](https://www.python.org/)
+
 > **项目路径**: `E:\Learning\Competition\Electric_Competition\信号及仪器仪表类`
 > **最后更新**: 2026-06-10
 > **统计范围**: 2021-2025年全国大学生电子设计竞赛（信号及仪器仪表类）
@@ -215,9 +219,17 @@ signal_toolkit/
 | `tdr_analysis` | TDR + 等效采样 + 4种负载反射 | 2023-B, 2025-D |
 | `iq_demodulation` | I/Q下变频 + AM/FM/PM解调 + 信号分离 | 2022-F, 2023-H, 2025-F |
 
-运行示例: `python -m signal_toolkit.examples.example_iq` / `python -m signal_toolkit.examples.example_tdr`
+运行示例:
+```
+python -m signal_toolkit.examples.example_iq
+python -m signal_toolkit.examples.example_tdr
+```
 
-运行测试: `python -m pytest tests/ -v` (64项, 2s)
+运行测试: `python -m pytest tests/ -v --cov=signal_toolkit` (64项, 2s)
+
+API文档: 由 GitHub Actions 自动构建部署至 GitHub Pages（每次 push 到 main 触发）
+
+CI状态: 自动在 Python 3.9–3.12 上运行测试并生成覆盖率报告
 
 ---
 

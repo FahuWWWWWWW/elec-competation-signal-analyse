@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "signal_toolkit"
+version = "1.0.0"
+description = "电赛信号仪器类13题公共算法库 (2021-2025)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.21",
+    "scipy>=1.7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-cov>=5"]
+docs = ["pdoc>=14"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
