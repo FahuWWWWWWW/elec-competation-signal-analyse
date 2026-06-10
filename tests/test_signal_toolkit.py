@@ -15,6 +15,10 @@ from signal_toolkit import goertzel as goertzel_mod
 from signal_toolkit import dds_synthesis as dds
 from signal_toolkit import tdr_analysis as tdr
 from signal_toolkit import iq_demodulation as iq
+from signal_toolkit import power_analysis
+from signal_toolkit import impedance_analysis
+from signal_toolkit import modulation_classification
+from signal_toolkit import waveform_analysis
 
 
 # ============================================================
@@ -460,6 +464,229 @@ class TestIqDemodulation:
         components, amps = iq.separate_signals(sig, [10000], fs)
         assert len(amps) == 1
         assert abs(amps[0] - 0.5) < 0.05
+
+
+# ============================================================
+# power_analysis tests
+# ============================================================
+
+class TestPowerAnalysis:
+    def test_rms_dc(self):
+        assert abs(power_analysis.rms(np.ones(100)) - 1.0) < 1e-10
+
+    def test_rms_sine(self):
+        t = np.linspace(0, 0.1, 1000)
+        sig = np.sin(2 * np.pi * 50 * t)
+        assert abs(power_analysis.rms(sig) - 1.0 / np.sqrt(2)) < 0.01
+
+    def test_power_resistive(self):
+        fs = 10000
+        t = np.arange(int(0.1 * fs)) / fs
+        v = 220 * np.sqrt(2) * np.sin(2 * np.pi * 50 * t)
+        i = 5 * np.sqrt(2) * np.sin(2 * np.pi * 50 * t)
+        p = power_analysis.active_power(v, i)
+        assert abs(p - 220 * 5) < 10
+
+    def test_power_factor_unity(self):
+        fs = 10000
+        t = np.arange(int(0.1 * fs)) / fs
+        v = np.sin(2 * np.pi * 50 * t)
+        i = np.sin(2 * np.pi * 50 * t)
+        pf = power_analysis.power_factor(v, i)
+        assert abs(pf - 1.0) < 0.01
+
+    def test_power_factor_phase(self):
+        fs = 10000
+        t = np.arange(int(0.1 * fs)) / fs
+        phi = np.pi / 3
+        v = np.sin(2 * np.pi * 50 * t)
+        i = np.sin(2 * np.pi * 50 * t - phi)
+        pf = power_analysis.power_factor(v, i)
+        assert abs(pf - np.cos(phi)) < 0.01
+
+    def test_compute_power_parameters(self):
+        fs = 10000
+        t = np.arange(int(0.1 * fs)) / fs
+        v = 100 * np.sin(2 * np.pi * 50 * t)
+        i = 2 * np.sin(2 * np.pi * 50 * t - np.pi / 6)
+        params = power_analysis.compute_power_parameters(v, i, 50, fs)
+        for key in ('v_rms', 'i_rms', 'p', 's', 'q', 'pf', 'phase'):
+            assert key in params
+        assert params['v_rms'] > 0
+        assert params['i_rms'] > 0
+
+    def test_zero_current(self):
+        assert power_analysis.power_factor(np.ones(100), np.zeros(100)) == 0.0
+
+    def test_apparent_power(self):
+        assert abs(power_analysis.apparent_power(100, 5) - 500) < 1e-10
+
+
+# ============================================================
+# impedance_analysis tests
+# ============================================================
+
+class TestImpedanceAnalysis:
+    def test_impedance_vi_resistive(self):
+        fs = 50000
+        duration = 0.02
+        t = np.arange(int(duration * fs)) / fs
+        f_target = 1000
+        v = 10 * np.sin(2 * np.pi * f_target * t)
+        r_load = 100
+        i = v / r_load
+        z_mag, z_phase = impedance_analysis.impedance_vi(v, i, fs, f_target)
+        assert abs(z_mag - r_load) < 0.5
+        assert abs(z_phase) < 0.05
+
+    def test_impedance_vi_inductive(self):
+        fs = 50000
+        duration = 0.02
+        t = np.arange(int(duration * fs)) / fs
+        f_target = 1000
+        L = 0.01
+        v = 10 * np.sin(2 * np.pi * f_target * t)
+        i = v / (2 * np.pi * f_target * L)
+        i = np.roll(i, -int(len(t) * 0.25))
+        z_mag, z_phase = impedance_analysis.impedance_vi(v, i, fs, f_target)
+        assert z_phase > 0
+        assert abs(z_mag - 2 * np.pi * f_target * L) < 5
+
+    def test_quality_factor(self):
+        q = impedance_analysis.quality_factor(100, 0)
+        assert q == 0.0
+
+    def test_lcr_resistance(self):
+        result = impedance_analysis.lcr_from_impedance(100, 0, 1000)
+        assert result['type'] == 'resistance'
+        assert abs(result['resistance'] - 100) < 1e-10
+
+    def test_lcr_inductance(self):
+        result = impedance_analysis.lcr_from_impedance(62.8, np.pi / 2, 1000)
+        assert result['type'] == 'inductance'
+        assert abs(result['inductance'] - 0.01) < 0.001
+
+    def test_lcr_capacitance(self):
+        result = impedance_analysis.lcr_from_impedance(1591.5, -np.pi / 2, 100)
+        assert result['type'] == 'capacitance'
+        assert abs(result['capacitance'] - 1e-6) / 1e-6 < 0.02
+
+    def test_series_resonance(self):
+        r = impedance_analysis.series_resonance(L=1e-3, C=1e-6, R=10)
+        expected_f = 1 / (2 * np.pi * np.sqrt(1e-9))
+        assert abs(r['f_resonance'] - expected_f) / expected_f < 0.001
+        assert r['q'] > 0
+
+    def test_parallel_resonance(self):
+        r = impedance_analysis.parallel_resonance(L=1e-3, C=1e-6, R=1000)
+        assert r['f_resonance'] > 0
+
+    def test_detect_resonance_series(self):
+        freqs = np.linspace(10, 1000, 100)
+        f0 = 500
+        z = np.sqrt((freqs - f0) ** 2 + 100)
+        res = impedance_analysis.detect_resonance(freqs, z)
+        assert res is not None
+        assert abs(res - f0) < 20
+
+    def test_detect_resonance_short(self):
+        assert impedance_analysis.detect_resonance(np.array([1, 2]), np.array([1, 1])) is None
+
+
+# ============================================================
+# modulation_classification tests
+# ============================================================
+
+class TestModulationClassification:
+    def test_extract_features_am(self):
+        fs = 500000
+        t, am = dds.generate_am(fs, 100000, 5000, 0.5, 0.005)
+        feats = modulation_classification.extract_features(am, fs)
+        assert 'gamma_max' in feats
+        assert 'sigma_ap' in feats
+        assert feats['sigma_ap'] > 0.05
+
+    def test_extract_features_fm(self):
+        fs = 500000
+        t, fm = dds.generate_fm(fs, 100000, 20000, 3000, 0.005)
+        feats = modulation_classification.extract_features(fm, fs)
+        assert feats['sigma_af'] > 0.05
+
+    def test_classify_am(self):
+        fs = 500000
+        t, am = dds.generate_am(fs, 100000, 5000, 0.5, 0.005)
+        result = modulation_classification.classify_modulation(am, fs)
+        assert result == 'AM'
+
+    def test_classify_fm(self):
+        fs = 500000
+        t, fm = dds.generate_fm(fs, 100000, 20000, 3000, 0.005)
+        result = modulation_classification.classify_modulation(fm, fs)
+        assert result == 'FM'
+
+    def test_classify_cw(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        cw = np.sin(2 * np.pi * 100000 * t)
+        result = modulation_classification.classify_modulation(cw, fs)
+        assert result == 'CW'
+
+    def test_extract_features_empty(self):
+        feats = modulation_classification.extract_features(np.zeros(100), 1000)
+        assert feats['sigma_ap'] == 0.0
+
+
+# ============================================================
+# waveform_analysis tests
+# ============================================================
+
+class TestWaveformAnalysis:
+    def test_zero_crossing_rate_sine(self):
+        fs = 10000
+        t = np.arange(1000) / fs
+        sig = np.sin(2 * np.pi * 50 * t)
+        zcr = waveform_analysis.zero_crossing_rate(sig)
+        assert abs(zcr - 2 * 50 / fs) < 0.01
+
+    def test_count_peaks_sine(self):
+        fs = 10000
+        t = np.arange(1000) / fs
+        sig = np.sin(2 * np.pi * 50 * t)
+        peaks = waveform_analysis.count_peaks(sig)
+        assert peaks == 5
+
+    def test_duty_cycle_square(self):
+        sig = np.concatenate([np.ones(75), -np.ones(25)])
+        dc = waveform_analysis.duty_cycle(sig, 0)
+        assert abs(dc - 0.75) < 0.01
+
+    def test_symmetry_ratio(self):
+        sig = np.concatenate([np.linspace(0, 1, 100), np.linspace(1, 0, 100)])
+        sym = waveform_analysis.symmetry_ratio(sig)
+        assert abs(sym - 1.0) < 0.01
+
+    def test_estimate_frequency(self):
+        fs = 10000
+        t = np.arange(1000) / fs
+        sig = np.sin(2 * np.pi * 123 * t)
+        f_est = waveform_analysis.estimate_frequency(sig, fs)
+        assert abs(f_est - 123) < 2
+
+    def test_estimate_frequency_zero(self):
+        assert waveform_analysis.estimate_frequency(np.zeros(100), 1000) == 0.0
+
+    def test_classify_sine(self):
+        fs = 10000
+        t = np.arange(1000) / fs
+        sig = np.sin(2 * np.pi * 50 * t)
+        assert waveform_analysis.classify_waveform(sig, fs) == 'sine'
+
+    def test_classify_square(self):
+        sig = np.concatenate([np.ones(500), -np.ones(500)])
+        assert waveform_analysis.classify_waveform(sig, 10000) in ('square', 'pulse')
+
+    def test_classify_noise(self):
+        assert waveform_analysis.classify_waveform(np.random.randn(100), 1000) == 'noise'
 
 
 if __name__ == "__main__":
