@@ -1,10 +1,13 @@
 """FFT analysis, window functions and THD computation."""
 
+from typing import Callable, Dict, Optional, Tuple, Union
 import numpy as np
 from scipy import signal as scipy_signal
 
+WindowSpec = Union[str, Callable[[int], np.ndarray], None]
 
-def flat_top_window(N):
+
+def flat_top_window(N: int) -> np.ndarray:
     n = np.arange(N)
     a0, a1, a2, a3, a4 = 0.2156, 0.4160, 0.2778, 0.0836, 0.0068
     return (a0
@@ -14,15 +17,15 @@ def flat_top_window(N):
             + a4 * np.cos(8.0 * np.pi * n / (N - 1)))
 
 
-def hanning_window(N):
+def hanning_window(N: int) -> np.ndarray:
     return np.hanning(N)
 
 
-def hamming_window(N):
+def hamming_window(N: int) -> np.ndarray:
     return np.hamming(N)
 
 
-def blackman_harris_window(N):
+def blackman_harris_window(N: int) -> np.ndarray:
     n = np.arange(N)
     a0, a1, a2, a3 = 0.35875, 0.48829, 0.14128, 0.01168
     return (a0
@@ -31,7 +34,7 @@ def blackman_harris_window(N):
             - a3 * np.cos(6.0 * np.pi * n / (N - 1)))
 
 
-def _get_window(window, N):
+def _get_window(window: WindowSpec, N: int) -> np.ndarray:
     if window is None:
         return np.ones(N)
     if callable(window):
@@ -45,7 +48,13 @@ def _get_window(window, N):
     return w_map[window](N)
 
 
-def compute_spectrum(signal, fs, window='hanning', n_fft=None, detrend=True):
+def compute_spectrum(
+    signal: np.ndarray,
+    fs: float,
+    window: str = 'hanning',
+    n_fft: Optional[int] = None,
+    detrend: bool = True,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     signal = np.asarray(signal, dtype=float)
     N = len(signal)
     if n_fft is None:
@@ -71,7 +80,11 @@ def compute_spectrum(signal, fs, window='hanning', n_fft=None, detrend=True):
     return freqs, mag, phase
 
 
-def find_fundamental(freqs, mag, f_range=(None, None)):
+def find_fundamental(
+    freqs: np.ndarray,
+    mag: np.ndarray,
+    f_range: Tuple[Optional[float], Optional[float]] = (None, None),
+) -> Optional[int]:
     lo = f_range[0] if f_range[0] is not None else freqs[0]
     hi = f_range[1] if f_range[1] is not None else freqs[-1]
     mask = (freqs >= lo) & (freqs <= hi)
@@ -81,8 +94,13 @@ def find_fundamental(freqs, mag, f_range=(None, None)):
     return indices[np.argmax(mag[indices])]
 
 
-def find_harmonics(freqs, mag, fundamental_freq, num_harmonics=5):
-    harmonics = {}
+def find_harmonics(
+    freqs: np.ndarray,
+    mag: np.ndarray,
+    fundamental_freq: float,
+    num_harmonics: int = 5,
+) -> Dict[int, float]:
+    harmonics: Dict[int, float] = {}
     delta_f = freqs[1] - freqs[0]
     for order in range(2, num_harmonics + 2):
         target = order * fundamental_freq
@@ -96,7 +114,13 @@ def find_harmonics(freqs, mag, fundamental_freq, num_harmonics=5):
     return harmonics
 
 
-def compute_thd(signal, fs, fundamental_freq, num_harmonics=5, window='flat_top'):
+def compute_thd(
+    signal: np.ndarray,
+    fs: float,
+    fundamental_freq: float,
+    num_harmonics: int = 5,
+    window: str = 'flat_top',
+) -> Tuple[float, Dict[int, float]]:
     freqs, mag, _ = compute_spectrum(signal, fs, window=window)
     tol = fundamental_freq * 0.1
     f0_idx = find_fundamental(freqs, mag,

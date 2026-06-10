@@ -1,9 +1,14 @@
 """Goertzel algorithm for efficient single-frequency DFT computation."""
 
+from typing import List, Tuple
 import numpy as np
 
 
-def goertzel(samples, target_freq, fs):
+def goertzel(
+    samples: np.ndarray,
+    target_freq: float,
+    fs: float,
+) -> Tuple[float, float]:
     samples = np.asarray(samples, dtype=float)
     N = len(samples)
     if N == 0:
@@ -26,16 +31,27 @@ def goertzel(samples, target_freq, fs):
     return amplitude, phase
 
 
-def goertzel_bank(samples, freq_list, fs):
+def goertzel_bank(
+    samples: np.ndarray,
+    freq_list: List[float],
+    fs: float,
+) -> List[Tuple[float, float, float]]:
     samples = np.asarray(samples, dtype=float)
-    results = []
+    results: List[Tuple[float, float, float]] = []
     for f in freq_list:
         amp, phase = goertzel(samples, f, fs)
         results.append((f, amp, phase))
     return results
 
 
-def detect_frequencies(samples, fs, f_min, f_max, step=10, threshold=0.01):
+def detect_frequencies(
+    samples: np.ndarray,
+    fs: float,
+    f_min: float,
+    f_max: float,
+    step: float = 10,
+    threshold: float = 0.01,
+) -> List[Tuple[float, float]]:
     samples = np.asarray(samples, dtype=float)
     N_freqs = int(np.floor((f_max - f_min) / step)) + 1
     freqs = np.linspace(f_min, f_max, N_freqs)
@@ -44,7 +60,7 @@ def detect_frequencies(samples, fs, f_min, f_max, step=10, threshold=0.01):
     max_mag = np.max(magnitudes)
     if max_mag == 0.0:
         return []
-    peaks = []
+    peaks: List[Tuple[float, float]] = []
     for i in range(1, N_freqs - 1):
         if (magnitudes[i] > magnitudes[i - 1]
                 and magnitudes[i] >= magnitudes[i + 1]

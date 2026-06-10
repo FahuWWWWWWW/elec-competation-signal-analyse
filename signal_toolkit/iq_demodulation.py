@@ -1,22 +1,23 @@
 """I/Q demodulation and coherent detection."""
 
+from typing import List, Optional, Tuple
 import numpy as np
 from scipy import signal as scipy_signal
 
 
-def _design_lpf(cutoff, fs, order=5):
+def _design_lpf(cutoff: float, fs: float, order: int = 5) -> Tuple[np.ndarray, np.ndarray]:
     nyq = 0.5 * fs
     norm_cutoff = min(cutoff / nyq, 0.99)
     b, a = scipy_signal.butter(order, norm_cutoff, btype='low')
     return b, a
 
 
-def _apply_lpf(x, cutoff, fs, order=5):
+def _apply_lpf(x: np.ndarray, cutoff: float, fs: float, order: int = 5) -> np.ndarray:
     b, a = _design_lpf(cutoff, fs, order)
     return scipy_signal.filtfilt(b, a, x)
 
 
-def _trim_signal(x, trim_ratio=0.15):
+def _trim_signal(x: np.ndarray, trim_ratio: float = 0.15) -> np.ndarray:
     """Remove start/end transients by trimming given ratio from both ends."""
     n = len(x)
     start = int(n * trim_ratio)
@@ -24,7 +25,12 @@ def _trim_signal(x, trim_ratio=0.15):
     return x[start:end] if end > start else x
 
 
-def iq_demodulate(signal, f_carrier, fs, cutoff=None):
+def iq_demodulate(
+    signal: np.ndarray,
+    f_carrier: float,
+    fs: float,
+    cutoff: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     t = np.arange(len(signal)) / fs
     lo_i = np.cos(2 * np.pi * f_carrier * t)
     lo_q = -np.sin(2 * np.pi * f_carrier * t)
@@ -39,7 +45,12 @@ def iq_demodulate(signal, f_carrier, fs, cutoff=None):
     return I, Q
 
 
-def demodulate_am(signal, fs, f_carrier=None, cutoff=None):
+def demodulate_am(
+    signal: np.ndarray,
+    fs: float,
+    f_carrier: Optional[float] = None,
+    cutoff: Optional[float] = None,
+) -> Tuple[np.ndarray, float]:
     if f_carrier is not None:
         I, Q = iq_demodulate(signal, f_carrier, fs, cutoff=cutoff)
         envelope = np.sqrt(I ** 2 + Q ** 2)
@@ -56,7 +67,13 @@ def demodulate_am(signal, fs, f_carrier=None, cutoff=None):
     return envelope, modulation_index
 
 
-def demodulate_fm(signal, fs, f_carrier=None, f_dev=None, cutoff=None):
+def demodulate_fm(
+    signal: np.ndarray,
+    fs: float,
+    f_carrier: Optional[float] = None,
+    f_dev: Optional[float] = None,
+    cutoff: Optional[float] = None,
+) -> Tuple[np.ndarray, float]:
     if f_carrier is not None:
         if cutoff is None:
             if f_dev is not None:
@@ -82,7 +99,11 @@ def demodulate_fm(signal, fs, f_carrier=None, f_dev=None, cutoff=None):
     return demod, freq_deviation
 
 
-def demodulate_pm(signal, fs, f_carrier=None):
+def demodulate_pm(
+    signal: np.ndarray,
+    fs: float,
+    f_carrier: Optional[float] = None,
+) -> np.ndarray:
     if f_carrier is not None:
         I, Q = iq_demodulate(signal, f_carrier, fs)
         inst_phase = np.unwrap(np.arctan2(Q, I))
@@ -94,7 +115,13 @@ def demodulate_pm(signal, fs, f_carrier=None):
     return inst_phase
 
 
-def coherent_demodulate(signal, f_carrier, f_target, fs, phase=0):
+def coherent_demodulate(
+    signal: np.ndarray,
+    f_carrier: float,
+    f_target: float,
+    fs: float,
+    phase: float = 0,
+) -> Tuple[float, float, np.ndarray]:
     t = np.arange(len(signal)) / fs
     ref = np.cos(2 * np.pi * f_target * t + phase)
     mixed = signal * ref
@@ -121,11 +148,15 @@ def coherent_demodulate(signal, f_carrier, f_target, fs, phase=0):
     return amplitude, phase_out, reconstructed
 
 
-def separate_signals(mixed_signal, freq_list, fs):
+def separate_signals(
+    mixed_signal: np.ndarray,
+    freq_list: List[float],
+    fs: float,
+) -> Tuple[List[np.ndarray], List[float]]:
     n = len(mixed_signal)
     t = np.arange(n) / fs
-    components = []
-    amplitudes = []
+    components: List[np.ndarray] = []
+    amplitudes: List[float] = []
     residual = mixed_signal.copy()
     for f in sorted(freq_list):
         amp, phase, recon = coherent_demodulate(mixed_signal, f, f, fs, 0)

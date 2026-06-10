@@ -189,7 +189,39 @@
 
 ---
 
-## 五、文件统计
+## 五、Python 通用算法库 (signal_toolkit)
+
+基于13题共性算法提炼的通用信号处理库，提供7个模块，64项单元测试覆盖。
+
+```
+signal_toolkit/
+├── __init__.py          # 顶层导出
+├── utils.py             # 单位换算(dBm↔Vpp)、SNR、moving_average
+├── fft_analysis.py      # Flat-top/Hanning/Hamming/Blackman-Harris窗、THD、谐波
+├── filters.py           # Butterworth LPF/BPF设计、Sallen-Key、阶数估算
+├── goertzel.py          # Goertzel算法、频率扫描、多频检测
+├── dds_synthesis.py     # DDS类(32bit相累)、AM/FM/扫频/脉冲生成
+├── tdr_analysis.py      # TDR类、等效采样、反射检测、电缆模型(4种故障)
+└── iq_demodulation.py   # AM/FM/PM解调、I/Q正交下变频、相干分离
+```
+
+| 模块 | 核心功能 | 对应题目 |
+|------|---------|---------|
+| `utils` | dBm↔Vpp换算、SNR计算、next_power_of_two | 2024-B |
+| `fft_analysis` | Flat-top窗FFT + THD + 谐波分析 | 2021-A, 2024-B |
+| `filters` | Butterworth设计、Sallen-Key传递函数 | 2025-G, 通用 |
+| `goertzel` | Goertzel盲检测 + 频率扫描 | 2023-H |
+| `dds_synthesis` | DDS + AM/FM/Pulse/扫频生成 | 2024-C, 2025-F |
+| `tdr_analysis` | TDR + 等效采样 + 4种负载反射 | 2023-B, 2025-D |
+| `iq_demodulation` | I/Q下变频 + AM/FM/PM解调 + 信号分离 | 2022-F, 2023-H, 2025-F |
+
+运行示例: `python -m signal_toolkit.examples.example_iq` / `python -m signal_toolkit.examples.example_tdr`
+
+运行测试: `python -m pytest tests/ -v` (64项, 2s)
+
+---
+
+## 六、文件统计
 
 | 类别 | 数量 | 说明 |
 |------|------|------|
@@ -199,11 +231,12 @@
 | **仿真脚本** | 15个 | MATLAB(3) + Python(12) |
 | **仿真图片** | 93张 | 每题7张Test图（2021-A额外2张补充） |
 | **复现报告** | 13篇 | 含调理电路映射的完整报告 |
+| **Python库模块** | 7个 | signal_toolkit (100%类型标注, 64项pytest) |
 | **总索引** | 1篇 | 本文件 |
 
 ---
 
-## 六、各年核心结论速览
+## 七、各年核心结论速览
 
 | 年份 | 题目 | 核心结论 | 银弹技术 |
 |------|------|---------|---------|
@@ -223,7 +256,7 @@
 
 ---
 
-## 七、下一步方向
+## 八、下一步方向
 
 1. **🔴 高优先级**: 为每题选最优硬件方案出原理图+PCB设计
 2. **🟡 中优先级**: 生成2021-2025年跨年技术对比总结报告
