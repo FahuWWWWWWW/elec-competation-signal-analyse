@@ -107,6 +107,9 @@ def classify_waveform(signal: np.ndarray, fs: float) -> str:
             return 'sine'
         return 'triangle'
 
+    if zcr > 0.3 and abs(sym) < 0.5:
+        return 'noise'
+
     above = np.sum(x > np.std(x) * 0.5)
     if 2 * above / len(x) > 0.3:
         return 'square'

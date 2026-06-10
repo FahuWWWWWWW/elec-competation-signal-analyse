@@ -276,6 +276,21 @@ class TestDdsSynthesis:
         assert len(t) == 50
         assert np.max(y) == 1.0
 
+    def test_dds_generate(self):
+        d = dds.DDS(f_clk=125e6, fs=10000)
+        d.set_frequency(1000)
+        t, y = d.generate(duration=0.01)
+        assert len(t) == 100
+        assert np.max(np.abs(y)) > 0
+        assert d._phase_acc > 0
+
+    def test_dds_generate_phase_continuity(self):
+        d = dds.DDS(f_clk=125e6, fs=10000)
+        d.set_frequency(1000)
+        t1, y1 = d.generate(duration=0.01)
+        t2, y2 = d.generate(duration=0.01)
+        assert not np.array_equal(y1, y2)
+
 
 # ============================================================
 # tdr_analysis tests
@@ -592,6 +607,35 @@ class TestImpedanceAnalysis:
     def test_detect_resonance_short(self):
         assert impedance_analysis.detect_resonance(np.array([1, 2]), np.array([1, 1])) is None
 
+    def test_parallel_equivalent(self):
+        rs, xs = impedance_analysis.parallel_equivalent(100, 50)
+        assert np.isfinite(rs) and np.isfinite(xs) and rs > 0
+
+    def test_parallel_equivalent_zero_rp(self):
+        rs, xs = impedance_analysis.parallel_equivalent(0, 50)
+        assert rs == 0.0 and xs == 0.0
+
+    def test_lcr_dc(self):
+        result = impedance_analysis.lcr_from_impedance(100, 0, 0)
+        assert result['type'] == 'unknown'
+        assert result['resistance'] == 100
+
+    def test_quality_factor_zero_mag(self):
+        assert impedance_analysis.quality_factor(0, 0) == 0.0
+
+    def test_series_resonance_invalid(self):
+        r = impedance_analysis.series_resonance(L=0, C=1e-6)
+        assert r['f_resonance'] == 0.0
+
+    def test_parallel_resonance_invalid(self):
+        r = impedance_analysis.parallel_resonance(L=1e-3, C=0)
+        assert r['f_resonance'] == 0.0
+
+    def test_detect_resonance_monotonic(self):
+        freqs = np.array([10, 100, 1000])
+        z = np.array([100, 50, 10])
+        assert impedance_analysis.detect_resonance(freqs, z) is None
+
 
 # ============================================================
 # modulation_classification tests
@@ -634,6 +678,46 @@ class TestModulationClassification:
     def test_extract_features_empty(self):
         feats = modulation_classification.extract_features(np.zeros(100), 1000)
         assert feats['sigma_ap'] == 0.0
+
+    def test_classify_modulation_pm(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        pm = np.cos(2 * np.pi * 100000 * t + 2.0 * np.sin(2 * np.pi * 3000 * t))
+        result = modulation_classification.classify_modulation(pm, fs)
+        assert isinstance(result, str) and len(result) > 0
+
+    def test_classify_modulation_fsk(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        fsk = np.cos(2 * np.pi * 100000 * t + 2 * np.pi * 20000 * (np.sign(np.sin(2 * np.pi * 500 * t))) * t)
+        result = modulation_classification.classify_modulation(fsk, fs)
+        assert isinstance(result, str) and len(result) > 0
+
+    def test_classify_modulation_ssb(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        ssb = np.cos(2 * np.pi * 105000 * t)
+        result = modulation_classification.classify_modulation(ssb, fs)
+        assert isinstance(result, str) and len(result) > 0
+
+    def test_classify_modulation_dsb(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        dsb = np.cos(2 * np.pi * 5000 * t) * np.cos(2 * np.pi * 100000 * t)
+        result = modulation_classification.classify_modulation(dsb, fs)
+        assert isinstance(result, str) and len(result) > 0
+
+    def test_high_order_cumulant(self):
+        fs = 500000
+        t = np.arange(2500) / fs
+        for sig in [
+            np.sin(2 * np.pi * 100000 * t),
+            np.cos(2 * np.pi * 5000 * t) * np.cos(2 * np.pi * 100000 * t),
+        ]:
+            c40, c41, c42 = modulation_classification._high_order_cumulant(sig)
+            assert np.isfinite(c40)
+            assert np.isfinite(c41)
+            assert np.isfinite(c42)
 
 
 # ============================================================
@@ -686,7 +770,19 @@ class TestWaveformAnalysis:
         assert waveform_analysis.classify_waveform(sig, 10000) in ('square', 'pulse')
 
     def test_classify_noise(self):
-        assert waveform_analysis.classify_waveform(np.random.randn(100), 1000) == 'noise'
+        rng = np.random.RandomState(42)
+        assert waveform_analysis.classify_waveform(rng.randn(100), 1000) == 'noise'
+
+    def test_classify_triangle(self):
+        fs = 10000
+        t = np.arange(1000) / fs
+        f0 = 50
+        tri = 2 * abs(2 * (t * f0 - np.floor(t * f0 + 0.5))) - 1
+        assert waveform_analysis.classify_waveform(tri, fs) == 'triangle'
+
+    def test_estimate_frequency_few_crossings(self):
+        sig = np.array([-1, 1, -1], dtype=float)
+        assert waveform_analysis.estimate_frequency(sig, 1000) == 0.0
 
 
 if __name__ == "__main__":
